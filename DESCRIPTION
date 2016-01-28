@@ -1,10 +1,10 @@
-Package: GDMRPruebaBuena
+Package: GDMR
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Fuzzy Group decision making
 Version: 0.1
-Date: 2016-01-28
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Date: 2015-01-28
+Author: Raquel Ureña
+Maintainer: raquel@decsai.ugr.es
+Description: Fuzzy group decision making with consensus and incomplete information stimation
+License: GNU
 LazyData: TRUE
