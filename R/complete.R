@@ -1,6 +1,13 @@
 
 
 
+#' Title complete
+#'\code{complete} Estimate the missing preferences in a matrix of preferences following the additive consistency property
+#' @param preferences  a matrix where all the incomplete experts preferences are included, that is, if there are n alternatives and h experts it receives a matrix of
+#' h*n rows and n cols
+#'
+#' @return the complete matrix of preferences
+
 complete=function(preferences)
 {
   size=dim(preferences);

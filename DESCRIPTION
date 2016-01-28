@@ -4,7 +4,7 @@ Title: Fuzzy Group decision making
 Version: 0.1
 Date: 2015-01-28
 Author: Raquel Ureña
-Maintainer: raquel@decsai.ugr.es
-Description: Fuzzy group decision making with consensus and incomplete information stimation
+Maintainer: Raquel Ureña <raquel@decsai.ugr.es>
+Description: Fuzzy group decision making with consensus and incomplete information
 License: GNU
 LazyData: TRUE

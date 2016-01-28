@@ -70,6 +70,17 @@ weight=function(r,type)
   return(q);
 }
 
+#' Title
+#' \code{agregation} aggregates all the experts preferences following and Yager OWA quantifier
+#' @param preferences amtrix with the experts preferences
+#' @param M Number of experts
+#' @param N  Number of aternatives
+#' @param quantifier Type of quantifier
+#'
+#' @return A NxN matrix with the preferences of all the experts aggregated using the given quantifier
+#' @export
+#'
+#' @examples
 agregation=function(preferences,M,N,quantifier)
 {
   w=array(0,M);
