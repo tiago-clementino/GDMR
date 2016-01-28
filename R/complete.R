@@ -2,7 +2,7 @@
 
 
 #' Title complete
-#'\code{complete} Estimate the missing preferences in a matrix of preferences following the additive consistency property
+#'\code{complete} Completes the missing preferences values in a matrix of preferences following the additive consistency property
 #' @param preferences  a matrix where all the incomplete experts preferences are included, that is, if there are n alternatives and h experts it receives a matrix of
 #' h*n rows and n cols
 #'
@@ -97,6 +97,18 @@ complete=function(preferences)
   return(preferences)
 }
 
+#' Estimates the missing value using the additive consistency properties
+#'
+#'
+#' @param i number of row where the preference is located
+#' @param k number of column where the preference is located
+#' @param preferences matrix of preferences
+#' @param type tipe of estimation
+#'
+#' @return the estimated value
+#' @export
+#'
+#' @examples
 estimate=function(i,k,preferences,type)
 {
   cp=0;
@@ -156,6 +168,3 @@ estimate=function(i,k,preferences,type)
 
 }
 
-
-#pref=generateIncompletePref(5);
-#prefComplete=complete(pref);
