@@ -1,5 +1,15 @@
 
 
+#' Calculates the distance between two elements
+#'
+#' @param a Firt element
+#' @param b Second element
+#' @param type Type of distance, could be 'manhattan', 'euclidean', 'cosine', 'dice', 'jacard'
+#'
+#' @return d the distance between the two given elements
+#' @export
+#'
+#' @examples
 distanceCalculation=function(a,b,type)
 {
 
@@ -47,6 +57,17 @@ jacard=function(a,b)
   return(d);
 }
 
+
+
+#' Computes the weights in the aggregation when a Yager Ordering weighting averaging operator (OWA) is used
+#'
+#' @param r
+#' @param type Type of quantifier to be used in the aggregation, could be 'leasthalf', 'most' and 'asmany'.
+#'
+#' @return weight for the BUM function
+#' @export
+#'
+#' @examples
 weight=function(r,type)
 {
 
@@ -70,12 +91,12 @@ weight=function(r,type)
   return(q);
 }
 
-#' Title
+#'
 #' \code{agregation} aggregates all the experts preferences following and Yager OWA quantifier
 #' @param preferences amtrix with the experts preferences
 #' @param M Number of experts
 #' @param N  Number of aternatives
-#' @param quantifier Type of quantifier
+#' @param quantifier Type of quantifier could be 'leasthalf', 'most', 'asmany'
 #'
 #' @return A NxN matrix with the preferences of all the experts aggregated using the given quantifier
 #' @export
@@ -97,6 +118,17 @@ agregation=function(preferences,M,N,quantifier)
 }
 
 
+#' Exploitation
+#'
+#' @param agregated NxN matrix of preference where all the experts preferences has been included
+#' @param N Number of expert
+#' @param dominance Type of choice degree "GDD" or "GNDD"
+#' @param quantifier Type of quantifier
+#'
+#' @return
+#' @export
+#'
+#' @examples
 exploitation=function(agregated,N,dominance,quantifier)
 {
   #quantifier='most';

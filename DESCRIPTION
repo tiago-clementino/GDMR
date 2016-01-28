@@ -2,7 +2,7 @@ Package:GDMR
 Type: Package
 Title: GDM-R: A new framework in R to support fuzzy group decision making processes
 Version: 0.1
-Date: 2015-01-28
+Date: 2016-01-28
 Author: Raquel Urena
 Maintainer: Raquel Urena <raquel@decsai.ugr.es>
 Description: A framework  to carry out consensus guided decision making processes using fuzzy preference relations providing mechanism to deal with missing information.The system includes tools to visualize the evolution of the decision making process and presents various operation modes,including a test operation one which automatically creates a customized decision scenario to validate, test and compare among various decision making approaches.

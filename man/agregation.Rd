@@ -2,8 +2,7 @@
 % Please edit documentation in R/GDMR2.R
 \name{agregation}
 \alias{agregation}
-\title{Title
-\code{agregation} aggregates all the experts preferences following and Yager OWA quantifier}
+\title{\code{agregation} aggregates all the experts preferences following and Yager OWA quantifier}
 \usage{
 agregation(preferences, M, N, quantifier)
 }
@@ -14,13 +13,12 @@ agregation(preferences, M, N, quantifier)
 
 \item{N}{Number of aternatives}
 
-\item{quantifier}{Type of quantifier}
+\item{quantifier}{Type of quantifier could be 'leasthalf', 'most', 'asmany'}
 }
 \value{
 A NxN matrix with the preferences of all the experts aggregated using the given quantifier
 }
 \description{
-Title
 \code{agregation} aggregates all the experts preferences following and Yager OWA quantifier
 }
 

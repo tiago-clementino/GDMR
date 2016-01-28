@@ -13,7 +13,7 @@ estimate(i, k, preferences, type)
 
 \item{preferences}{matrix of preferences}
 
-\item{type}{tipe of estimation}
+\item{type}{type of estimation}
 }
 \value{
 the estimated value

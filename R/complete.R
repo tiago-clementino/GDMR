@@ -103,7 +103,7 @@ complete=function(preferences)
 #' @param i number of row where the preference is located
 #' @param k number of column where the preference is located
 #' @param preferences matrix of preferences
-#' @param type tipe of estimation
+#' @param type type of estimation
 #'
 #' @return the estimated value
 #' @export
