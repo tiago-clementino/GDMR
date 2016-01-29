@@ -1,5 +1,4 @@
 
-
 #' Calculates the distance between two elements
 #'
 #' @param a Firt element
@@ -12,7 +11,6 @@
 #' @examples
 distanceCalculation=function(a,b,type)
 {
-
   if (type=='manhattan'){d=manhattan(a,b);}
   else if (type=='euclidean') {d=euclidean(a,b);}
   else if (type=='cosine') {d=cosine(a,b);}
@@ -186,85 +184,48 @@ proximity=function(M,N,preferences,agregated)
   #browser();
 
   npref=N*N-N;
-
-
   prox_level1=data.frame(matrix(0,M,npref));
   dist_level1=data.frame(matrix(0,M,npref));
   prox_level2=data.frame(matrix(0,M,N));
   dist_level2=data.frame(matrix(0,M,N));
   aux=vector();
-
-
   cont=1;
-
   for (m1 in 1:M)
   {
-
         for (i in 1:npref)
         {
-
           a=preferences[m1,i];
           b=agregated[i];
           dist_level1[m1,i]=distanceCalculation(a,b,distance);
-
-
         }
-
-
   }
   prox_level1=1-dist_level1;
-  #print(prox_level1)
-
-  #level11=apply(preferences,1,distanceCalculation, b, distance)
-
-
-  #print(level1);
-  #browser();
-
   #Level 2 Alternative Level
-
-
   cont=1;
-
-
   for (m in 1:M)
   {
-
     for (i in seq(1, ((N-1)*(N-1)+1), N-1))
     {
       a=preferences[m,i:(i+N-2)];
       b=agregated[i:(i+N-2)];
       valor=distanceCalculation(a,b,distance);
       aux=c(aux,valor)
-
     }
     dist_level2[cont,]=aux;
     cont=cont+1;
     aux=vector();
-
   }
   prox_level2=1-dist_level2;
   #print(prox_level2)
 
-
-
-
   #Proximity level3
-
   proximity_level3_experts<<- apply(prox_level2, 1, mean);
   #barplot( proximity_level3_experts, main="Experts' Proximity level to the agregated solution",  xlab="Expert")
 
   proximity_level3_alternatives<<- apply(prox_level2, 2, mean);
   #barplot( proximity_level3_alternatives, main="Alternatives' Proximity to the aggregated solution",  xlab="Alternative")
-
-
   #print(proximity_level3_experts)
-
 }
-
-
-
-
 
 consensus=function(M,N,preferences,distance)
 {
