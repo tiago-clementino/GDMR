@@ -42,6 +42,15 @@ generatePref=function(n,consistent)
   return (pref);
 }
 
+#' generateIncompletePref Generates a matrix of incomplete preferences ramdomly colocated
+#' @param n number of alternatives
+#' @param consistent boolean paramater that indicates if the maxtrix of preference is consistent or not
+#'
+#' @return pref a matrix of preferences
+#' @export
+#'
+#' @examples
+
 generateIncompletePref=function(n,consistent)
 {
   pref=generatePref(n,consistent);
@@ -61,7 +70,7 @@ generateIncompletePref=function(n,consistent)
 }
 
 
-generateDF=function(valorRef, M,diferencia)
+generateDF=function(valorRef, M, diferencia)
 {
   dataset=(matrix(NA, nrow = M, ncol = 1))
   for (i in 1:M){

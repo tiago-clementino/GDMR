@@ -162,6 +162,15 @@ exploitation=function(agregated,N,dominance,quantifier)
   return (tabla);
 }
 
+
+#' owa Aggregates the elementes in the vector A following an Ordering Weighting Averaging operator, OWA, with the weights provided as a parameter
+#' @param A number of alternatives
+#' @param w Weights for the aggregation
+#'
+#' @return h Aggregated value
+#' @export
+#'
+#' @examples
 owa=function(A,w){
   h=sum(sort(A,decreasing = TRUE)*w);
   return(h);

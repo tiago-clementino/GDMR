@@ -1,8 +1,10 @@
-
-mapRepresentations=function(agregada, mydata)
+#library(lattice)
+#library(scatterplot3d)
+mapRepresentations=function(agregada, mydata, NAlternatives)
 {
 
-  agregatedDig=dataFrame2Matrix(agregated,N)
+
+  agregatedDig=dataFrame2Matrix(agregated,NAlternatives)
 
 
   consAgregated=consistency(agregatedDig)

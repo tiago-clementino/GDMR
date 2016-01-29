@@ -1,3 +1,5 @@
+
+
 consistencyDF=function(preferencesDF)
 {
 
