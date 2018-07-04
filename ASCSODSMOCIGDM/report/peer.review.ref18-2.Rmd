@@ -1,0 +1,573 @@
+---
+title: "Exercício de Reprodução de Experimento"
+subtitle: "Artigo Original: A Statistical Comparative Study of Different Similarity Measures of Consensus in Group Decision Making"
+author: "Tiago Lucas Pereira Clementino"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+abstract: "This paper explores a variety of topics related to the question of testing the equality of covariance matrices in multivariate linear models, particularly in the MANOVA setting. The main focus is on graphical methods that can be used to understand features of data related to this question."
+output:
+  pdf_document: 
+    pandoc_args: ["-V", "classoption=twocolumn"]
+    number_sections: true
+    fig_width: 6 
+    fig_height: 4.5
+  beamer_presentation:
+    highlight: haddock
+  includes:
+    keep_tex: yes
+  html_document:
+    toc: true
+    toc_float: true
+    theme: lumen
+    fig_width: 6 
+    fig_height: 4.5 
+  word_document: default
+header-includes:
+  - \usepackage{multicol}
+  - \usepackage{amsfonts,amssymb,amsmath,mathbbol}
+  - \usepackage{graphics,graphicx,epsfig}
+  - \usepackage{rotating,subfig}
+  - \usepackage{caption}
+---
+\fontsize{11}{18}
+\fontseries{b}
+\selectfont
+```{r setup, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(here)
+library(lubridate)
+library(boot)
+library(knitr)
+library(gridExtra)
+library(ggExtra)
+library(gapminder)
+library(ggalt)
+library(ggplot2)
+library(ggcorrplot)
+library(broom)
+library(modelr)
+theme_set(theme_bw())
+options(warn=-1)
+```
+
+# Contexto
+
+Nosso objetivo é analisar e extrair informação de dados coletados por uma plataforma aberta de integração contínua chamada Travistorrent. O Travisttorrent é um serviço de integração contínua de projetos disponíveis no Github, um repositório de projetos colaborativos também aberto.
+
+A integração contínua é um processo onde o desenvolvedor integra o código alterado e/ou criado ao projeto principal na mesma frequência com que as funcionalidades são introduzidas.
+
+Nossa intenção é analisar os dados fazendo um paralelo entre as linguagens de programação Java e Ruby, levantando questões inerentes às características dos projetos de software que as utilizam. Diante disto, descartamos quaisquer dados referentes a outras linguagens.
+
+# Nossos Dados
+
+Os dados são informações diversas, referentes a projetos disponíveis no Github e que, no momento da coleta, utilizaram o Travistorent nos últimos três meses, além de corresponder a certas especificações de filtragem. Estas informações descrevem operações inerentes ao andamento de projetos no Github e a procedimentos de integração contínua (testes, *commits*, PR, *builds* de integração, etc) ao longo de um certo período de tempo.
+
+```{r read, include=FALSE}
+consensus = read_csv(here::here("./ASCSODSMOCIGDM/data/data2.csv"))
+```
+
+# Distribuições dos dados entre Java e Ruby 
+
+O gráfico abaixo apresenta a distribuição dos dados entre Java e Ruby. É fácil perceber que a vantagem numérica de Ruby em relação à Java é grande, mas isto não deve interferir em nossas observações. Nossas análises farão um paralelo entre estas duas linguagens.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+consensus %>% 
+  mutate(consensus=`final consensus`-`initial consensus`) %>%
+  ggplot(aes(y= consensus, x=distance  , color = quantifier)) + 
+  geom_jitter(alpha = .2, width = .2) + 
+  geom_boxplot(outlier.alpha = .0) +
+  labs(x='Modelo de distância',  
+    y='Consenso', 
+    title="Índices de consenso medidos por métrica de distância", 
+    subtitle="(distance, final consensus)", 
+    caption="GDMR",
+    color="quantificador") +
+  theme(plot.title = element_text(face="bold",size = "17"),
+    plot.subtitle = element_text(size = "12"),
+    plot.caption = element_text(size="12"),
+    axis.title.x = element_text(size ="15"),
+    axis.title.y = element_text(size="15"),
+    axis.text.x = element_text(size="12"),
+    axis.text.y = element_text(size="12"),
+    panel.border=element_blank())
+
+consensus %>% 
+  ggplot(aes(y= `final consensus`, x=distance  , color = quantifier)) + 
+  geom_jitter(alpha = .2, width = .2) + 
+  geom_boxplot(outlier.alpha = .0) +
+  labs(x='Modelo de distância',  
+    y='Consenso', 
+    title="Índices de consenso medidos por métrica de distância", 
+    subtitle="(distance, final consensus)", 
+    caption="GDMR",
+    color="quantificador") +
+  theme(plot.title = element_text(face="bold",size = "17"),
+    plot.subtitle = element_text(size = "12"),
+    plot.caption = element_text(size="12"),
+    axis.title.x = element_text(size ="15"),
+    axis.title.y = element_text(size="15"),
+    axis.text.x = element_text(size="12"),
+    axis.text.y = element_text(size="12"),
+    panel.border=element_blank())
+
+consensus %>% 
+  mutate(level = ifelse(level>=2,ifelse(level==2,'2','3'),'1')) %>%
+  ggplot(aes(y= `final consensus`, x= distance , color = level)) + 
+  geom_jitter(alpha = .2, width = .2) + 
+  geom_boxplot(outlier.alpha = .0)
+
+consensus %>% 
+  ggplot(aes(y= `final consensus`, x= experts , color = distance)) + 
+  geom_jitter(alpha = .2, width = .2) 
+
+consensus %>% 
+  ggplot(aes(y= `final consensus`, x= alternatives , color = distance)) + 
+  geom_jitter(alpha = .2, width = .2) 
+```
+
+# Objetivos
+
+Precisamos avaliar um conjunto de variáveis em um exercício de visualização de correlações de dados através de marcas e canais. O objetivo de nossa investigação é entender os dados e as relações entre suas variáveis. Tendo isto em vista, é importante ser capaz de escolher as marcas e canais adequados para nossa análise.
+
+A partir disto, devemos propor possíveis correlações alvo ligadas às relações entre variáveis que julguemos interessantes, para em seguida proceder a análise.
+
+## Regras
+
+De acordo com o enunciado do Laboratório 2 checkpoint 02 da disciplina LPCC2, este documento deve conter gráficos plenamente legíveis (tanto o texto quanto os elementos) para um zoo de 100% em um documento pdf de duas colunas (os gráficos devem ter a largura de uma coluna) e seguir as boas práticas de visualização estudadas. Além de texto descrevendo a tarefa de visualização.
+
+# Variáveis
+
+Nossa base de dados conta com variáveis bem intuitivas, cada uma delas descreve alguma característica dos projetos. Vide tabela no final deste documento
+
+Na nossa análise buscaremos uma ou mais características da relação entre as variáveis **sloc\_end** e **sloc\_med**, explorando marcas e canais gráficos. Além de incluirmos eventualmente **activity\_period**, **team** e **lang** para posicionar nossas análises no nosso conjunto de dados.
+
+## Variáveis de estudo
+
+Selecionamos para este relatório duas variáveis que serão alvo de comparações, medições e visualizações, são elas: **sloc\_end** e **sloc\_med**, outras variáveis também podem ser usadas na comparação como **lang** ou **team**. Nosso objetivo é observar seu comportamento, confirmando ou refutando certas perspectivas de correlação que chamaremos de questões e são descritas abaixo.
+
+# Análise
+
+A partir daqui analisaremos nossos dados com base em questões levantadas a partir de correlações entre variáveis. Neste estudo, o principal foco é a análise visual. Utilizaremos diversas variedades de gráficos estatísticos, canais de visualização e marcas.
+
+Um canal é uma dimensão usada para converter dados de uma tabela em uma visualização gráfica. Um canal pode ser de alta ou baixa magnitude, representando uma eficácia na visualização de informação maior ou menor. 
+
+Nosso primeiro objetivo é entender como o volume de código se comporta ao longo do tempo, e faremos isto comparando as variáveis **sloc\_end** e **sloc\_med**, sempre fazendo um paralelo com variáveis significativas como **lang** e/ou **team**, priorizando canais mais eficazes para variáveis alvo de análise.
+
+## **sloc\_end** e **sloc\_med**
+
+A principal relação entre estas duas variáveis é o tempo. **sloc\_med**, como já foi mencionado, mede o volume de código de um projeto na metade de seu tempo de vida (até o fim da medição dos dados), já **sloc\_end** mede o volume total de código no fim do período de medição. É de se esperar que **sloc\_med** sejá menor que **sloc\_end**, mas qual a proporção desta diferença?
+
+Para começar a responder esta pergunta poderíamos pensar em usar um gráfico de dispersão (*scatter plot*). O gráfico de dispersão posiciona todos os elementos observados como pontos em um plano cartesiano, onde x corresponde a uma variável e y à outra.
+
+Um bom tipo de gráfico para relacionar **sloc\_med** e **sloc\_end** é o *Dumbbell Plot*, que pode ser visto como uma variação do gráfico de dispersão. Nele o canal "posicionamento bidimensional" está representado na forma de pontos em um plano tal como o gráfico de dispersão. Porém, o eixo x apresenta duas variáveis e a progressão de uma até a outra, formando uma linha (o comprimento da linha é mais um canal). Abaixo está um *Dumbbell Plot* onde x descreve a variável **sloc\_med** e a distância entre ela e **sloc\_end**. Incluiremos também as variáveis **lang** e **team** nos canais cor dos pontos e dimensão vertical para posicionar melhor nosso gráfico nos nossos dados.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+consensus %>% 
+  ggplot(aes(x = `final consensus`)) + 
+  geom_histogram()
+
+consensus %>% 
+  ggplot(aes(x = `final consensus`-`initial consensus`)) + 
+  geom_histogram()
+```
+
+Observando os pontos e traços neste gráfico podemos ter a ideia de que talvez a maior parte do desenvolvimento ocorra entre o início e a primeira metade do projeto. Isto com base na diferença entre o comprimento dos traços que descrevem a distância entre **sloc\_med** e **sloc\_end**, e a distância entre **sloc\_med** e a origem de x. Porém, é uma conclusão muito inicial, pois há muitos pontos aglomerados de difícil visualização, além de alguns pontos com grandes distâncias entre **sloc\_med** e **sloc\_end**.
+
+Uma nova evidência para esta afirmação poderia ser obtida observando não as duas variáveis separadas, mas uma nova variável composta pela proporção entre elas. A fórmula $$\frac{sloc\_med*100}{sloc\_end}$$ nos traz este valor. Novamente, para posicionar melhor nossa visualização nos nossos dados, incluiremos as seguintes três variáveis no gráfico; **team**, **activity\_period** e **lang** nos canais dimensão horizontal, área do ponto e cor, respectivamente. Um *boxplot* para cada um de cem *breaks* (quando diferentes de vazio) ajuda a visualizar a relação.
+
+
+
+
+```{r echo=FALSE}
+funcao_bootstrap <- function(data, indexes){
+    d = data %>% 
+      slice(indexes) %>% 
+      group_by(distance) %>% 
+      summarise(`final consensus` = median(`final consensus`)) %>% 
+      pull(`final consensus`)   
+    return(d[1] - d[2])
+}
+
+funcao_bootstrap_2 <- function(data_){
+    return (boot(data = data_, 
+                   statistic = funcao_bootstrap,
+                   R = 200))
+}
+
+funcao_bootstrap_distribution <- function(distribution,titleArg){
+  
+  p1 <- distribution %>% 
+  ggplot(aes(x = estatistica)) + 
+  geom_histogram(binwidth = .001, fill = "darkgray", color="white") + 
+    labs(x=NULL,  
+        y=NULL, 
+        title=titleArg) +
+    theme(plot.title = element_text(face="bold",size = "8"),
+        plot.caption = element_text(size="9"),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        panel.border = element_rect(colour = "white"),
+        panel.background = element_rect(fill = "lightgray"))
+  
+    return (p1)
+}
+
+funcao_bootstrap_ci_tibble <- function(ci,m,n,title_,quantifier_,level_){
+  
+  result <- tibble(statistic = as.double(ci$t0),
+                   statistic_count = ifelse(
+                     (as.double(ci$basic[4]) > 0.0 & as.double(ci$basic[5]) > 0)|
+                     (as.double(ci$basic[4]) < 0.0 & as.double(ci$basic[5]) < 0),1,0),
+                   basic_1 = as.double(ci$basic[4]), 
+                   basic_2 = as.double(ci$basic[5]), 
+                   experts = as.character(m),
+                   alternatives = as.character(n),
+                   title = title_,
+                   quantifier = quantifier_,
+                   level = level_)
+  return (result)
+}
+
+funcao_bootstrap_ci <- function(bootstraps){
+  
+  return (boot.ci(bootstraps, conf = 0.95, type = "basic"))
+}
+
+```
+
+```{r echo=FALSE}
+
+bootstraps_ma_co <- funcao_bootstrap_2(consensus %>% filter(distance == 'manhattan' | distance == 'cosine')) 
+
+bootstraps_ma_eu <- funcao_bootstrap_2(consensus %>% filter(distance == 'manhattan' | distance == 'euclidean'))
+
+bootstraps_ma_di <- funcao_bootstrap_2(consensus %>% filter(distance == 'manhattan' | distance == 'dice'))
+
+bootstraps_ma_ja <- funcao_bootstrap_2(consensus %>% filter(distance == 'manhattan' | distance == 'jacard'))
+
+bootstraps_co_eu <- funcao_bootstrap_2(consensus %>% filter(distance == 'cosine' | distance == 'euclidean'))
+
+bootstraps_co_di <- funcao_bootstrap_2(consensus %>% filter(distance == 'cosine' | distance == 'dice'))
+
+bootstraps_co_ja <- funcao_bootstrap_2(consensus %>% filter(distance == 'cosine' | distance == 'jacard'))
+
+bootstraps_eu_di <- funcao_bootstrap_2(consensus %>% filter(distance == 'euclidean' | distance == 'dice'))
+
+bootstraps_eu_ja <- funcao_bootstrap_2(consensus %>% filter(distance == 'euclidean' | distance == 'jacard'))
+
+bootstraps_di_ja <- funcao_bootstrap_2(consensus %>% filter(distance == 'dice' | distance == 'jacard'))
+
+```
+
+```{r echo=FALSE}
+
+p1 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_ma_co$t)),"Manhattan X Cosine")
+
+p2 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_ma_eu$t)),"Manhattan X Euclidean")
+
+p3 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_ma_di$t)),"Manhattan X Dice")
+
+p4 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_ma_ja$t)),"Manhattan X Jacard")
+
+p5 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_co_eu$t)),"Cosine X Euclidean")
+
+p6 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_co_di$t)),"Cosine X Dice")
+
+p7 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_co_ja$t)),"Cosine X Jacard")
+
+p8 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_eu_di$t)),"Euclidean X Dice")
+
+p9 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_eu_ja$t)),"Euclidean X Jacard")
+
+p10 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_di_ja$t)),"Dice X Jacard")
+
+```
+
+```{r echo=FALSE}
+
+grid.arrange(arrangeGrob(p1,p2,p3,p4,ncol=2,widths=c(1,1)),
+    arrangeGrob(p5,p6,p7,p8,p9,p10,ncol=2,widths=c(1,1)),
+    heights=c(2,3))
+```
+
+No gráfico acima é possível perceber que a maior parte dos pontos está acima de 60%, o que nos leva a concluir que geralmente mais da metade do código é escrito no início do projeto. Além disto, é frequênte, de acordo com o gráfico, projetos com 80% ou 90% do desenvolvimento ocorrido na primeira metade de sua vida. Observando os *bosplots* pode-se perceber apenas um *box* abaixo de 50%, e com apenas um projeto.
+
+Uma visualização mais clara talvez possa vir com um gráfico de dispersão (*scatter plot*) simples, que descreve a posição de cada projeto em um plano cartesiano onde x é o **sloc\_end** e y é **sloc\_med**. Novamente, incluiremos também as variáveis **lang** e **team** nos canais cor e área dos pontos para posicionar melhor nosso gráfico nos nossos dados.
+
+```{r echo=FALSE}
+
+aux=tibble()
+M=c(4,6,8,10,12)
+N=c(4,6,8)
+quantifiers=c("asmany","most","leasthalf")
+levels=c(1:3)
+
+#m=6
+#m=6
+#level=3
+#quantifier="asmany"
+for (m in M)
+{
+  for (n in N)
+  {
+    for (level in levels)
+    {
+      for (quantifier in quantifiers)
+      {
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='manhattan'|distance=='cosine',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Manhattan X Cosine",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='manhattan'|distance=='euclidean',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Manhattan X Euclidean",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='manhattan'|distance=='dice',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Manhattan X Dice",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='manhattan'|distance=='jacard',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Manhattan X Jacard",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='cosine'|distance=='euclidean',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Cosine X Euclidean",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='cosine'|distance=='dice',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Cosine X Dice",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='cosine'|distance=='jacard',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Cosine X Jacard",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='euclidean'|distance=='dice',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Euclidean X Dice",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='euclidean'|distance=='jacard',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Euclidean X Jacard",
+          quantifier,
+          level))
+        aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_2(
+            consensus%>%filter(distance=='dice'|distance=='jacard',experts==m,alternatives==n)
+            )),
+          m,
+          n,
+          "Dice X Jacard",
+          quantifier,
+          level))
+      }
+    }
+
+  }
+}
+
+```
+
+Veja a eficácia do canal "posicionamento no plano", apenas com base no gráfico acima já podemos perceber claramente dois atributos desta relação. O primeiro aponta que de fato, como já poderíamos supor, **sloc\_end** é maior que **sloc\_med** aparentemente em todos os casos. Perceba que não há nenhum ponto acima da diagonal principal do nosso gráfico. Neste momento, não podemos garantir que esta afirmação é verdade para todos os casos, pois os canais de visualização geralmente proveem apenas uma direção para a análise. Em buscar de uma resposta categórica, precisamos de um modelo. Veja abaixo.
+
+
+```{r echo=FALSE}
+
+aux_new <- aux %>% group_by(experts,alternatives,quantifier,level) %>% summarise(statistic_count = sum(statistic_count)) 
+
+aux_new %>%
+ggplot(aes(experts, alternatives, fill = statistic_count)) + 
+  geom_tile(colour = "white") + 
+  facet_grid(level~quantifier) + 
+  scale_fill_gradient(low="red", high="green") +
+  labs(x="Quantificador",
+       y="Nível",
+       title = "Matriz de comparações significativas entre métricas de distância", 
+       fill="% de diferenças significativas")
+
+aux_new <- aux %>% group_by(experts,alternatives,quantifier,title) %>% summarise(statistic_count = sum(statistic_count))
+
+aux_new %>%
+ggplot(aes(experts, alternatives, fill = statistic_count)) + 
+  geom_tile(colour = "white") + 
+  facet_grid(title~quantifier) + 
+  scale_fill_gradient(low="red", high="green") +
+  labs(x="Quantificador",
+       y="Nível",
+       title = "Matriz de comparações significativas entre métricas de distância", 
+       fill=NULL) +
+    theme(plot.title = element_text(face="bold",size = "12"),
+        plot.caption = element_text(size="9"),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle=60, hjust=1),
+        axis.text.y = element_text(angle=90, hjust=1),
+        strip.text.y = element_text(angle = 0))
+
+```
+
+Agora podemos afirmar categoricamente que nenhum projeto em nossa base encolheu (refatoramento) entre a metade e o fim de sua vida. O segundo atributo da relação entre estas duas variáveis diz respeito à linearidade. É possível perceber que a figura composta pelos pontos no gráfico forma uma linha muito nítida à quase que exatos 45° de inclinação, bem em cima da diagonal principal do gráfico. Isto sugere que os valores de **sloc\_med** e **sloc\_end** são muito parecidos, o que nos leva a crer que a maior parte do desenvolvimento ocorra na primeira metade da vida dos projetos na nossa base de dados, como os dois gráficos anteriores já demonstravam.
+
+Novamente os canais de visualização nos apontam a direção da análise, mas para responder se a maior parte do desenvolvimento realmente ocorre no início do projeto devemos recorrer aos modelos. Através de um coeficiente de correlação linear entre **sloc\_med** e **sloc\_end** podemos ter a confirmação que buscamos. Nesta correlação sempre retornará um valor entre -1 e 1, onde -1 representa uma perfeita correlação decrescente, 0 a ausência de correlação e 1 representa uma correlação crescente forte. Aqui calculamos a correção entre estas variáveis de três métodos diferentes.
+
+```{r echo=FALSE}
+
+
+funcao_correlation_matrix <- function(data_,model){
+  
+  model = lm(model, data = data_ )
+  
+  g<-glance(model)
+  
+  return (g$r.squared)
+}
+
+aux_models=data.frame()
+
+names<-c("Consenso","Distância","Nível","Quantificador","Alternativas","Especialistas")
+values<-c("final consensus","distance","level","quantifier","alternatives","experts")
+
+for(x in 1:6){
+  coe=NaN
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus,`final consensus` ~ consensus[[values[x]]])
+    aux_models=rbind(aux_models,data.frame(
+      "x_"=names[x],
+      "y_"="Consenso",
+      coe))
+  }
+ 
+}
+
+
+```
+
+```{r echo=FALSE}
+
+aux_models %>% 
+  ggplot(aes(y= y_, x=x_, color = coe, size = coe,label=coe)) + 
+  geom_point() + 
+  geom_text(aes(label=round(coe,3)), size=5, color="black", fontface="bold") +
+  scale_size_continuous(range=c(8,20)) +
+  scale_color_continuous(low="darkgray",high="green") +
+  labs(x=NULL,  
+    y=NULL, 
+    title="Correlação entre o indice de consenso e demais variáveis", 
+    subtitle="(all variables, final consensus)") +
+  theme(plot.title = element_text(face="bold",size = "17"),
+    plot.subtitle = element_text(size = "12"),
+    plot.caption = element_text(size="12"),
+    axis.title.x = element_text(size ="15"),
+    axis.title.y = element_text(size="15"),
+    axis.text.x = element_text(size="12",vjust=1.),
+    axis.text.y = element_text(size="12"),
+    legend.position = "none",
+    panel.border = element_rect(colour = "white"),
+    panel.background = element_rect(fill = "lightgray"))
+
+```
+
+
+
+
+```{r echo=FALSE}
+
+modelo = lm(`final consensus` ~ distance + quantifier + level + alternatives + experts, data = consensus )
+
+t_ic <- tidy(modelo, conf.int = TRUE, conf.level = 0.95)
+
+r2 <- glance(modelo)
+
+```
+
+
+```{r}
+
+grid.arrange(
+  tableGrob(r2[1:1, c(1,2,5)]),
+  tableGrob(t_ic[2:10, c(1,2,5,6,7)]),
+  nrow=2)
+```
+
+A tabela apresenta os três valores referentes as três formas de calcular a correlação entre as variáveis. Perceba que todos apresentam uma correlação superior a 0.9, o que indica uma forte correlação. Esta evidência responde nossa atual dúvida. De fato, como os gráficos mostraram, a maior parte do desenvolvimento ocorre na primeira metade do projeto.
+
+# Conclusão
+
+Podemos concluir com base nos gráficos e resultados matemáticos, que nenhum projeto teve seu código refatorado a ponto de encolher da metade do tempo de vida do projeto até o fim e que a maior parte do desenvolvimento ocorre, em média, na primeira metade do tempo de vida do projeto.
+
+Como ameaça à validade desta conclusão, podemos mencionar que a variável **sloc\_end** não representa, de fato, o fim da vida do projeto, mas o fim da medição. Alguns projetos podem ter entrado em produção (quando passar a sofrer muito menos alterações) antes mesmo do momento em que **sloc\_med** foi registrado, outros não terem atingido a maturidade mesmo ao final do tempo total.
+\newpage
+\begin{multicols}{1}
+\begin{center}
+\begin{tabular}{c}
+\bf {\Large Anexos}
+\end{tabular}
+\end{center}
+\end{multicols}
+
+\begin{multicols}{1}
+\begin{tabular}{|l|p{9cm}|l|}\hline
+Nome & Descrição & Tipo \\ \hline \hline
+\bf gh\_project\_name & nome do projeto & Categórica \\ \hline
+\bf team & total de desenvolvedores que participaram do projeto até sua última medição & Numérica \\ \hline
+\bf lang & linguagem de programação predominante & Categórica \\ \hline
+\bf sloc\_end & total de linhas de código na última medição do projeto & Numérica \\ \hline
+\bf sloc\_med & total de linhas de código no meio do tempo de atividade estimado do projeto & Numérica \\ \hline
+\bf activity\_period & tempo de atividade estimado do projeto & Numérica \\ \hline
+\bf num\_commits & total de submissões de alteração durante todo o tempo de atividade do projeto & Numérica \\ \hline
+\bf commits\_per\_month & total de submissões por mês & Numérica \\ \hline
+\bf tests\_per\_kloc & casos de teste por total de linhas de código & Numérica \\ \hline
+\bf total\_builds & total de integrações & Numérica \\ \hline
+\bf build\_success\_prop & proporção de integrações bem-sucedidas & Numérica \\ \hline
+\bf builds\_per\_month & total médio de integrações por mês & Numérica \\ \hline
+\bf tests\_added\_per\_build & total médio de testes adicionados por integração & Numérica \\ \hline
+\bf tests\_successful & total de testes bem-sucedidos & Numérica \\ \hline
+\bf test\_density & densidade de testes & Numérica \\ \hline
+\bf test\_size\_avg & tamanho médio dos casos de testes & Numérica \\ \hline
+\end{tabular}
+
+\end{multicols}
+
