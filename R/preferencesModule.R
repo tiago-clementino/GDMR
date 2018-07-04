@@ -10,28 +10,32 @@
 #' @examples
 generatePref=function(n,consistent)
 {
-  pref= matrix(0,n,n);
+  #pref= matrix(0,n,n);
+  pref= matrix(0,1,n*n-n);
 
   for (i in 1:n){
     for(j in 1:n){
       if (i==j)
       {
-        pref[i,j]=0.5;
+        #pref[i,j]=0.5;
       }
       else
       {
         if(j>i)
         {
 
-          pref[i,j]=runif(1, 0, 1);
+          #pref[i,j]=runif(1, 0, 1);
+          pref[(i-1)*(n-1)+j-1]=runif(1, 0, 1);
           if (consistent)
           {
-            pref[j,i]=1-pref[i,j];
+            #pref[j,i]=1-pref[i,j];
+            pref[(j-1)*(n-1)+i]=1-pref[(i-1)*(n-1)+j-1];
           }
 
           else
           {
-            pref[j,i]=runif(1, 0, 1);
+            #pref[j,i]=runif(1, 0, 1);
+            pref[(j-1)*(n-1)+i]=runif(1, 0, 1);
           }
 
         }
