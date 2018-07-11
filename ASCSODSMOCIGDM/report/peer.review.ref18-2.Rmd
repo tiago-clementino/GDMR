@@ -3,7 +3,7 @@ title: "Exercício de Reprodução de Experimento"
 subtitle: "Artigo Original: A Statistical Comparative Study of Different Similarity Measures of Consensus in Group Decision Making"
 author: "Tiago Lucas Pereira Clementino"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
-abstract: "Um dos objetivos essenciais em problemas de decisão entre especialistas (do inglês Group Decision Models, GDM) é a obtenção de níveis aceitáveis de consenso. Uma solução não consensual pode não ter validade prática. Medir a similaridade entre as soluções apontadas por cada especialista é essencial para trilhar o caminho até o consenso. Decidir como fazer isto é importante para o sucesso neste processo. Em [1] o autor realizou uma comparação entre cinco dos principais (mais usados) modelos de medição da distância aplicados ao consenso (Manhatan, Euclidian, Dice, Cosine e Jacard). Pretendo questionar/validar este estudo, o reproduzindo e analisando utilizando um modelo de regressão aliado a uma análise estatística por intervalos de confiança, metodologia diferente daquela adotada pelo autor."
+abstract: "Um dos objetivos essenciais em problemas de decisão entre especialistas (do inglês Group Decision Models, GDM) é a obtenção de níveis aceitáveis de consenso. Uma solução não consensual pode não ter validade prática. Medir a similaridade entre as soluções apontadas por cada especialista é essencial para trilhar o caminho até o consenso. Decidir como fazer isto é importante para o sucesso neste processo. Em [@chiclana2013statistical] o autor realizou uma comparação entre cinco dos principais (mais usados) modelos de medição da distância aplicados ao consenso (Manhatan, Euclidian, Dice, Cosine e Jacard). Pretendo questionar/validar este estudo, o reproduzindo e analisando utilizando um modelo de regressão linear aliado a uma análise estatística por intervalos de confiança. Metodologia diferente daquela adotada pelo autor."
 output:
   pdf_document: 
     pandoc_args: ["-V", "classoption=twocolumn"]
@@ -21,13 +21,14 @@ output:
     fig_width: 6 
     fig_height: 4.5 
   word_document: default
+bibliography: "biblio/references.bib"
+link-citations: yes
 header-includes:
   - \usepackage{multicol}
   - \usepackage{amsfonts,amssymb,amsmath,mathbbol}
   - \usepackage{graphics,graphicx,epsfig}
   - \usepackage{rotating,subfig}
   - \usepackage{caption}
-  - \captionsetup[table]{position=bottom}   %% or below
 ---
 \fontsize{11}{18}
 \fontseries{b}
@@ -52,130 +53,135 @@ options(warn=-1)
 
 # Introdução
 
-Soluções voltadas à decisão em grupo (do inglês, Group Decision Making GDM) consistem em escolher a melhor opção de um conjunto de opções viáveis. Decidir qual a melhor opção frequentemente representa um problema complexo, sobretudo quando evolve o consenso entre um grupo de indivíduos.
+Soluções voltadas ao suporte à decisão em grupo trabalham para ajudar a escolher a melhor opção a partir de um conjunto de opções viáveis. Decidir qual a melhor opção frequentemente representa um problema complexo, sobretudo quando envolve o consenso entre um grupo de indivíduos. Com isto, medir com precisão a diferença entre multiplas opções de solução é uma importante questão projetual. Para tanto, é preciso escolher um modelo adequado para mensurar tal distância. O que se segue é a reprodução de um estudo comparativo que busca evidências que apontem os melhores modelos de distância para problemas de decisão em consenso.
 
-GDM são modelos onde um grupo de indivíduos mobiliza seus conhecimentos a certa e um problema em busca da melhor solução dentre um conjunto de critérios e alternativas possíveis. Neste contexto, CRP (Consensus Reaching Process) descrevem um processo onde indivíduos engajados na argumentação alteram suas opiniões visando elevar indicados de consenso e satisfação coletivos [14,15]. Para se atingir indicativos aceitáveis de consenso é preciso quantificar e comparar as preferências de cada indivíduo dentre pares de alterativas viáveis. Em tal comparação são aplicadas estratégias matemáticas de medição de distância. Neste contexto as cinco que mais se aplicam são as distâncias de Manhatan, Euclidiana, Dice, Jacard e Cosseno.
+GDM (do inglês, *Group Decision Making*) são modelos onde um grupo de indivíduos mobiliza seus conhecimentos a certa e um problema em busca da melhor solução dentre um conjunto de critérios e alternativas possíveis. Neste contexto, CRP (*Consensus Reaching Process*) descreve um processo onde indivíduos engajados na argumentação alteram suas opiniões visando elevar indicados de consenso e satisfação coletivos [@cabrerizo2009consensus; @cabrerizo2010analyzing]. Para se atingir indicativos aceitáveis de consenso é preciso quantificar e comparar as preferências de cada indivíduo dentre pares de alterativas viáveis. Em tal comparação são aplicadas estratégias matemáticas de medição de distância. Diante disto, as cinco estratégias mais aplicadas na literatura (segundo o autor original) são as distâncias de Manhatan, Euclidiana, Dice, Jacard e Cosseno [@cha2007comprehensive; @chen1995comparison; @deza2009encyclopedia; @wang1995comparative].
 
 Quando mencionamos a palavra consenso nos remetemos imediatamente ao conceito de unanimidade. Porém, nas últimas décadas tem crescido o entendimento de que uma interpretação mais flexível da ideia de consenso refletiria melhor as relações entre os seres humanos. Daí o conceito de Soft Consensus, onde o consenso é representado por um índice entre zero e um.
 
-Soft Consensus pode ser aplicado representando o consenso por quantificadores Fuzzy tais como “most”, “leasthalf” ou “asmany”, ao invés de apenas todos ou nenhum, sempre em função das preferências dos indivíduos. Tal consenso ainda pode ser mensurado usando três estratégias (níveis [ref]): comparação entre pares de alternativas, comparação entre todas as relações ligadas à uma alternativa especifica ou entre todas as alternativas globalmente. Todos os conceitos apresentados até aqui serão tratados com mais detalhes na seção seguinte, caso esta introdução já tenha sido suficiente ou o leitor tenha familiaridade com o assunto, pode avançar da introdução para a seção 3.
+Soft Consensus pode ser aplicado representando o consenso por quantificadores Fuzzy tais como “*most*”, “*leasthalf*” ou “*asmany*” (margens de maioria), ao invés de apenas "todos ou nenhum"(unanimidade). Tal consenso ainda pode ser mensurado usando três estratégias (níveis): comparação entre pares de alternativas, comparação entre todas as relações ligadas à uma alternativa especifica ou entre todas as relações globalmente. Todos os conceitos apresentados até aqui serão tratados com mais detalhes na seção seguinte, caso esta introdução já tenha sido suficiente ou o leitor tenha familiaridade com o assunto, pode avançar da introdução para a seção 3.
 
-Aqui foi feito uma reprodução de um estudo comparativo originalmente reportado em [x]. Os autores do estudo original fizeram uma comparação estatística entre os cinco principais modelos de medição de distância utilizadas no suporte ao consenso. Testes estatísticos pareados utilizando o método não-paramétrico de Wilcoxon foram reportados. Os resultados visavam responder se a aplicação de um ou outro modelo de distância excercia alguma influência no resultado do processo até o consenso. Dentre os fatores do experimento estão o quanficador Fuzzy aplicado, o nível de consenso aplicado, o total de indivíduos, o total de alternativas e o modelo de distância (variável de controle). O experimento original será descrito em detalhes na seção 3.
+Aqui foi feito a reprodução de um estudo comparativo originalmente reportado em [@chiclana2013statistical]. Os autores do estudo original fizeram uma comparação estatística entre os cinco principais modelos de medição de distância utilizadas no suporte ao consenso. Testes estatísticos pareados utilizando o método não-paramétrico de Wilcoxon foram reportados. Os resultados visavam responder se a aplicação de um ou outro modelo de distância exercia alguma influência no resultado do processo até o consenso. Dentre os fatores do experimento estão o quantificador Fuzzy aplicado, o nível de consenso aplicado, o total de indivíduos, o total de alternativas e o modelo de distância (variável de controle). O experimento original será descrito em detalhes na seção 3.
 
-Para esta reprodução, procurei seguir detalhadamente todos os passos do estudo original, porém aplicado o meu próprio modelo operacional (disponível em [link com nota de rodapé], junto com os scripts da análise, um guia de procedimento e até o texto deste relatório) e métodos estatísticos diferentes. Para o modelo operacional foi utilizado a plataforma R e a IDE RStudio. O código fonte utilizou como base um software livre de apoio ao consenso chamado GDMR (Group Decision Making R) [ref]. A análise procedeu com base em duas abordagens. Uma utilizando intervalos de confiança com *bootstrap* e o método BCA (do inglês *Bias Corrected Accelerated*) para reproduzir exatamente o mesmo quadro do artigo original (que utilizou o teste de Wilcoxon) e outra utilizou regressão para criar um modelo de correlação entre todos os fatores. Os detalhes desta reprodução estão descritos na seção 4 e a seção 5 traz resultados, comparações, conclusões e questionamentos.
+Para esta reprodução, procurei seguir detalhadamente todos os passos do estudo original, porém aplicando o meu próprio modelo operacional (disponível em [github.com/tiago-clementino/GDMR](https://github.com/tiago-clementino/GDMR), junto com os scripts da análise, um guia de reprodução e até o texto deste relatório) e métodos estatísticos diferentes. A análise procedeu com base em duas abordagens. Uma utilizando intervalos de confiança com *bootstrap* (por observar a distribuição gaussiana nos dados) para reproduzir exatamente o mesmo quadro do artigo original (que utilizou o teste de Wilcoxon) e outra utilizou regressão linear para criar um modelo de correlação entre todos os fatores. Os detalhes desta reprodução estão descritos na seção 4, o experimento original na seção 3 e a seção 6 traz comparações entre as conclusões do experimento original e deste.
 ```{r read, include=FALSE}
-consensus = read_csv(here::here("./ASCSODSMOCIGDM/data/data2.csv"))
+consensus = read_csv(here::here("./ASCSODSMOCIGDM/data/data.csv"))
 ```
 
 # Contexto
 
-Para contextualizar e tornar este documento alto suficiente, vamos esclarecer alguns conceitos que nortearam o experimento original e a reprodução.
+Para contextualizar e tornar este documento alto explicativo, vamos esclarecer alguns conceitos que nortearam o experimento original e a reprodução.
 
 ## GMD (*Group Decision Making*)
 
-GMD é o processo que visa atingir um julgamento comum a um conjunto de múltiplos participantes para um problema de decisão, o qual é definido por um conjunto de possíveis soluções (preestabelecidas ou não). De acordo com [46], GMD pode ser formalmente definido do seguinte modo:
+GMD é o processo que visa atingir um julgamento comum a um conjunto de múltiplos participantes para um problema de decisão, o qual é definido na forma de um conjunto de possíveis soluções. De acordo com [@kacprzyk1986group], GMD pode ser formalmente definido do seguinte modo:
 
-..* Um grupo de participantes, $E=\{e_1,e_2,...,e_m\}$, cada um deles com um certo grau de conhecimento referente ao domínio do problema.
+\begin{itemize}
+\item Um grupo de participantes, $E=\{e_1,e_2,...,e_m\}$, cada um deles com um certo grau de conhecimento referente ao domínio do problema.
 
-..* Um problema de decisão definido por n possíveis alternativas, o qual é denotado por $X=\{x_1,x_2,...,x_n\}$.
+\item Um problema de decisão definido por n possíveis alternativas, o qual é denotado por $X=\{x_1,x_2,...,x_n\}$.
 
-..* O processo onde os participantes tentam chegar a uma solução comum.
+\item O processo onde os participantes tentam chegar a uma solução comum.
+\end{itemize}
 
-Para cada participante $e_i∈E$, construa a função ${{μ}_p}_i X×X→D$, onde D é o domínio de representação da informação (em $[0,1]$) e ${{μ}_p}_i (x_l,x_k )=(p_{lk})^i (l,k∈\{1,2,...,n\})$ denota o grau de preferência da alternativa $x_l$ frente à $x_k$ em $D$ e $p_{ij}+p_{ji}=1,\forall i,j∈\{1,…,n\}$. Assim, as preferências dos participantes para todas as alternativas em $X$ podem ser descritas como uma matriz $P^i=(p_{lk}^i )_{(n×n)}$[46].
+Para cada participante $e_i\in E$, construa a função ${{\mu}_p}_i X\times X\implies D$, onde D é o domínio de representação da informação (em $[0,1]$) e ${{\mu}_p}_i (x_l,x_k )=(p_{lk})^i (l,k\in\{1,2,...,n\})$ denota o grau de preferência da alternativa $x_l$ frente à $x_k$ em $D$ e $p_{ij}+p_{ji}=1,\forall i,j\in\{1,…,n\}$. Assim, as preferências dos participantes para todas as alternativas em $X$ podem ser descritas como uma matriz $P^i=(p_{lk}^i )_{(n\times n)}$[@kacprzyk1986group].
 
-O uso de um modelo fixo de opinião baseado em preferências sobre alternativas é prática comum na literatura [30-32]. Diferentes métodos de avaliação são comparados em [38 do artigo], onde conclui-se que estratégias pareadas de comparação são mais eficientes que não pareadas. Dentre os modelos de representação das preferências dos participantes, aqueles baseados em relações de preferência Fuzzy [8, 9, 29, 34, 39, 46 no artigo] são os mais usuais no suporte ao consenso. Isto se dá em função do processo de agregação de preferências, convenientemente facilitado por quantificadores Fuzzy capazes de expressar imprecisão.
+O uso de um modelo fixo de opinião baseado em preferências sobre alternativas é prática comum na literatura [@tanino1984fuzzy; @herrera2002consensus; @orlovsky1978decision]. Diferentes métodos de avaliação de preferências são comparados em [@millet1997effectiveness], onde conclui-se que estratégias pareadas de comparação são mais eficientes que não pareadas. Dentre os modelos de representação das preferências dos participantes, aqueles baseados em relações de preferência Fuzzy [@chiclana1998integrating; @chiclana2002note; @kacprzyk1986group; @kahraman2003fuzzy; @orlovsky1978decision; @switalski2003general] são os mais usuais no suporte ao consenso. Isto se dá em função do processo de agregação de preferências, convenientemente facilitado por quantificadores Fuzzy capazes de expressar imprecisão.
 
 ## CRP (*Consensus Reaching Process*)
 
-Um processo de decisão em grupo pode ser resolvido apenas levantando e agregando opiniões dos participantes e, em seguida, selecionando diretamente a solução mais recorrente. Porém, a aprovação e consequente aplicação desta solução não pode estar assegurada pois não houve um consenso entre os especialistas [41]. O consenso nada mais é do que que a discussão em si, um processo recorrente e interativo onde um índice de consenso é checado a cada “rodada”.
+Um processo de decisão em grupo pode ser resolvido apenas levantando e agregando opiniões dos participantes e, em seguida, selecionando diretamente a solução mais bem sucedida. Porém, a aprovação e consequente aplicação desta solução não pode estar assegurada pois não houve um consenso entre os especialistas [@butler2007conflict]. O  consenso nada mais é do que a resultado da discussão em si, fruto de um processo recorrente e interativo onde um grau de consenso é checado a cada “rodada”.
 
-Consenso pode ser definido como “um entendimento mutuo produzido com o consentimento de todos os membros em um grupo ou entre vários grupos” [42]. Em um primeiro momento, a ideia de consenso pode nos remeter ao conceito de unanimidade, e nos primeiros trabalhos de pesquisa na área era este o objetivo [48,49]. Atualmente há um entendimento geral de que um conceito mais flexível de consenso (soft consensus) representa melhor a realidade das discussões humanas [50]. A lógica difusa (fuzzy logic) é um caminho recorrente neste sentido [46].
+Consenso pode ser definido como “um entendimento mútuo produzido com o consentimento de todos os membros em um grupo ou entre vários grupos” [@saint1994rules]. Em um primeiro momento, a ideia de consenso pode nos remeter ao conceito de unanimidade, e nos primeiros trabalhos de pesquisa na área era este o objetivo [@bezdek1978fuzzy; @spillman1980fuzzy]. Atualmente há um entendimento geral de que um conceito mais flexível de consenso (*Soft Consensus*) representa melhor a realidade das discussões humanas [@martinez2007challenges]. A lógica difusa (*Fuzzy Logic*) é um caminho recorrente neste sentido [@kacprzyk1986group].
 
-A cada rodada o processo de suporte ao consenso calcula dois parâmetros [4, 22, 23 no artigo]: (i) o índice de consenso que vai definir o quão próximo estamos de um limiar estipulado como aceitável (ii) uma medida de proximidade entre as preferências dos participantes, o que dará suporte ao processo rumo ao consenso. Estas medidas são utilizadas para mensurar o estágio do consenso em três diferentes nível de relações de preferência Fuzzy: preferências entre pares de alternativas (pairs of alternatives no artigo original), todas as relações ligadas a cada alternativa específica (alternatives level no artigo original) e uma medida geral (relation level no artigo original). Isto nos permite identificar quais indivíduos estão mais próximos da solução consensual, ou a respeito de quais alternativas o consenso será mais difícil.
+A cada rodada, o processo de suporte ao consenso calcula dois parâmetros [@cabrerizo2010managing; @herrera1996model; @herrera1997linguistic]: (i) o grau de consenso, que vai definir o quão próximo estamos de um limiar estipulado como aceitável (ii) uma medida de proximidade entre as preferências dos participantes, o que dará suporte ao processo rumo ao consenso. Estas medidas são utilizadas para mensurar o estágio do consenso em três diferentes níveis de relações de preferência Fuzzy: preferências entre pares de alternativas (*pairs of alternatives* no artigo original), preferências envolvendo todas as relações ligadas a uma alternativa específica (*alternatives level* no artigo original) e uma medida geral (*relation level* no artigo original). Isto nos permite identificar quais indivíduos estão mais próximos da solução consensual, ou a respeito de quais alternativas o consenso será mais difícil.
 
-O cálculo do índice de consenso envolve, necessariamente, alguma métrica de distância ou, preferivelmente, similaridade. Uma função de similaridade deve ser utilizada para mensurar ambos, o índice de consenso e uma matriz de proximidade.
+O cálculo do índice de consenso envolve, necessariamente, alguma métrica de similaridade. Uma função de similaridade deve ser utilizada para mensurar ambos, o índice de consenso e uma matriz de proximidade. Proximidade é calculada mensurando a similaridade entre as preferências (pares de alternativas), para cada participante r, e uma agregação geral em uma matriz de similaridade de acordo com $SM^r=({sm_{ij}}^r)$, onde $${sm_{ij}}^r=s({p_{ij}}^r,p_{ij} )$$
+Sendo ${p_{ij}}^r$ a medida da preferência do participante $r$ entre as alternativas $i,j\in X$, e  $p_{ij}=\phi({p_{ij}}^1,...,{p_{ij}}^{(r-1)},{p_{ij}}^{(r+1)},…,{p_{ij}}^m)$, onde $\phi$ é uma função que descreve a maioria segundo um quantificador Fuzzy (no experimento foi usado “*most*”, “*leathalf*” e “*asmany*”), e $s:[0,1]^{(m-1)}\times [0,1]^{(m-1)}\implies[0,1]$ é a função de similaridade. Esta matriz de similaridade é útil tanto no cálculo do consenso, quanto em prover o feedback necessário para que cada participante possa modificar sua opinião corretamente rumo ao consenso.
 
-Proximidade é calculada mensurando a similaridade entre as preferências entre pares de alternativas para cada participante r em uma matriz de similaridade de acordo com $SM^r=({sm_{ij}}^r)$, onde $${sm_{ij}}^r=s({p_{ij}}^r,p_{ij} )$$
-Sendo ${p_{ij}}^r$ a medida da preferência do participante $r$ entre as alternativas $i,j\in X$, e  $p_{ij}=\phi({p_{ij}}^1,...,{p_{ij}}^{(r-1)},{p_{ij}}^{(r+1)},…,{p_{ij}}^m)$, aqui $ϕ$ é uma função que descreve a maioria segundo um quantificador Fuzzy (no experimento foi usado “*most*”, “*leathalf*” e “*asmany*”) e $s:[0,1]^{(m-1)}×[0,1]^{(m-1)}\implies[0,1]$ é a função de similaridade. Esta matriz de similaridade é útil tanto no calculo do consenso, quanto em prover o feedback necessário para que cada participante possa modificar sua opinião corretamente rumo ao consenso.
+O consenso é calculado fundindo cada preferência entre pares de alternativas para cada participante r. Isto é feito segundo três níveis já mensionados.
 
-O consenso é calculado fundindo cada preferência entre pares de alternativas para cada participante r. Isto é feito segundo três níveis de relações de preferência Fuzzy.
+\begin{itemize}
+\item Nível 1: Consenso entre pares de alternativas, $cp_{ij}$, é um valor obtido pela agregação (utilizando os quantificadores Fuzzy) de todas as preferências dos participantes para cada par de alternativas $$\forall i,j=1,...,n\wedge i\neq j:cp_{ij}=\phi({sm_{ij}}^1,...,{sm_{ij}}^m)$$
+\item Nível 2: Consenso pela agregação de todas as relações ligadas a uma alternativa específica $$ca_i=\phi(cp_{ij},cp_{ji}:j=1,...,n\wedge j\neq i)$$
+\item Nível 3: Consenso por uma medida global envolvendo todos os participantes e alternativas $$cr=\phi(ca_i:i=1,...,n)$$
+\end{itemize}
 
-..* Nível 1: Consenso entre pares de alternativas, $cp_{ij}$, é um valor obtido pela agregação (utilizando os quantificadores Fuzzy) de todas as preferências dos participantes para cada par de alternativas $$∀i,j=1,...,n\wedge i\neq j:cp_{ij}=\phi({sm_{ij}}^1,...,{sm_{ij}}^m)$$
-..* Nível 2: Consenso pela agregação de todas as relações ligadas a uma alternativa específica $$ca_i=\phi(cp_{ij},cp_{ji}:j=1,...,n\wedge j\neq i)$$
-..* Nível 3: Consenso por uma medida global envolvendo todos os participantes e alternativas $$cr=\phi(ca_i:i=1,...,n)$$
-
-Atualmente, pelo menos 90 diferentes famílias de operadores de agregação tem sido estudadas [11,12,17,19,21,35,51,52,55,56 no artigo]. Dentre elaaas, o operador OWA (do inglês *Ordered Weighted Averaging*) porposto por Yager [52 no artigo] é o mais usado. A operação de agregação em função de um operador quantificador, $\phi$ é definida assim: $$p_{ij}^c=\phi(p_{ij}^1,...,p_{ij}^m)=\sum_{k=1}^{m}w_k\cdot p_{ij}^{\sigma(k)}$$, onde $\phi$ é uma função de permutação tal que $p_{ij}^{\sigma(k)}>p_{ij}^{\sigma(k+1)}, \forall k=1,...,m-1$ e $w_k\in W=\{w_1,...,w_n\}$ é um vetor ponderado obtido a partir dos quantificadores  de maioria Fuzzy descritos anteriormente.
+Atualmente, pelo menos 90 diferentes famílias de operadores de agregação têm sido estudadas [@chiclana2004induced; @chiclana2007some; @dubois1985review; @fodorfuzzy; @herrera2003study; @klir1988fuzzy; @xu2003overview; @yager1988ordered; @zhou2008type; @zhou2011alpha]. Dentre elas, o operador OWA (do inglês *Ordered Weighted Averaging*) porposto por Yager [@yager1988ordered] é o mais usado. A operação de agregação em função de um operador quantificador, $\phi$ é definida assim: $$p_{ij}^c=\phi(p_{ij}^1,...,p_{ij}^m)=\sum_{k=1}^{m}w_k\cdot p_{ij}^{\sigma(k)}$$, onde $\phi$ é uma função de permutação tal que $p_{ij}^{\sigma(k)}>p_{ij}^{\sigma(k+1)}, \forall k=1,...,m-1$ e $w_k\in W=(w_1,...,w_n)$ é um vetor ponderado obtido a partir dos quantificadores de maioria Fuzzy descritos anteriormente.
 
 
 # Experimento original
 
 ## Descrição do problema
 
-Dado um problema de decisão, a função de similartidade aplicada entre as preferências dos participantes tem um importante papel na convergênia rumo ao consenso. Isto serviu de motivação para um estudo comparativo que visa responder se o uso de diferentes funções desimilaridade pode ou não afetar o processo de consenso. Além do mais, se for o caso, produzir recomendações aos participantes que os guiem a ajustar ou manter suas opiniões rumo ao consenso em função da similaridade com núcleos de consenso pode tornar a decisão a respeito de qual função usar ainda mais significativa.
+Dado um problema de decisão, a função de similaridade aplicada entre as preferências dos participantes tem um importante papel na convergência rumo ao consenso. Isto serviu de motivação para um estudo comparativo que visa responder se o uso de diferentes funções de similaridade pode ou não afetar o processo de consenso. Além do mais, se for o caso, produzir recomendações aos participantes que os guiem a ajustar ou manter suas opiniões rumo ao consenso em função de uma similaridade concentrica pode tornar a decisão a respeito de qual métrica usar ainda mais significativa.
 
 ### Problema de negócio
 
-Atingir o consenso não é uma tarefa trivial, sobretudo quando lidamos com um número significativo de participantes ou um problema complexo (muitas alternativas). Identificar uma forma eficáz de mensuar o consenso ou mesmo produzir recomendações úteis pode ser muito difícil. Tomar as decisões corretas no projeto de um sistema de suporte ao consenso é decisivo para esta questão e isto passa por escolher a função de similaridade adequada.
+Atingir o consenso não é uma tarefa trivial, sobretudo quando lidamos com um número significativo de participantes ou um problema complexo (muitas alternativas). Identificar uma forma eficaz de mensurar o consenso ou mesmo produzir recomendações úteis pode ser muito difícil. Tomar as decisões corretas no projeto de um sistema de suporte ao consenso é decisivo para esta questão e isto passa por escolher a função de similaridade adequada.
 
 ### Problema técnico
 
-Comparar as cinco funções de similaridade mais frequentemente aplicadas a sistemas de suporte ao consenso baseados em quantificadores Fuzzy. Dados dois vetores de números reais $a=(a_1,a_2,...,a_u)$ e $b=(b_1,b_2,...,b_v)$, as cinco funções de similaridade testadas são as seguintes [6,7,15,48 no artigo]: $$Manhatan: d_1(a,b)=\sum_{i=1}^{n}|a_i-b_i|$$$$Euclidean: d_2(a,b)=\sqrt{\sum_{i=1}^{n}{|a_i-b_i|}^2}$$$$Cosine: d_2(a,b)=\frac{{\sum_{i=1}^{n}a_i\cdot b_i}}{\sqrt{\sum_{i=1}^{n}a_i^2}\cdot\sqrt{\sum_{i=1}^{n}b_i^2}}$$$$Dice: d_4(a,b)=\frac{2\cdot\sum_{i=1}^{n}a_i\cdot b_i}{\sum_{i=1}^{n}a_i^2+\sum_{i=1}^{n}b_i^2}$$$$Jaccard: d_5(a,b)=\frac{\sum_{i=1}^{n}a_i\cdot b_i}{\sum_{i=1}^{n}a_i^2+\sum_{i=1}^{n}b_i^2-\sum_{i=1}^{n}a_i^2\cdot\sum_{i=1}^{n}b_i^2}$$
+Comparar as cinco funções de similaridade mais frequentemente aplicadas a sistemas de suporte ao consenso baseados em quantificadores Fuzzy. Dados dois vetores de números reais $a=(a_1,a_2,...,a_u)$ e $b=(b_1,b_2,...,b_v)$, as cinco funções de similaridade testadas são as seguintes [@cha2007comprehensive; @chen1995comparison; @deza2009encyclopedia; @wang1995comparative]: \begin{footnotesize}$$Manhatan: d_1(a,b)=\sum_{i=1}^{n}|a_i-b_i|$$$$Euclidean: d_2(a,b)=\sqrt{\sum_{i=1}^{n}{|a_i-b_i|}^2}$$$$Cosine: d_2(a,b)=\frac{{\sum_{i=1}^{n}a_i\cdot b_i}}{\sqrt{\sum_{i=1}^{n}a_i^2}\cdot\sqrt{\sum_{i=1}^{n}b_i^2}}$$$$Dice: d_4(a,b)=\frac{2\cdot\sum_{i=1}^{n}a_i\cdot b_i}{\sum_{i=1}^{n}a_i^2+\sum_{i=1}^{n}b_i^2}$$$$Jaccard: d_5(a,b)=\frac{\sum_{i=1}^{n}a_i\cdot b_i}{\sum_{i=1}^{n}a_i^2+\sum_{i=1}^{n}b_i^2-\sum_{i=1}^{n}a_i^2\cdot\sum_{i=1}^{n}b_i^2}$$ \end{footnotesize}
 
 ## Objetivos da Investigação
 
-A pesquisa realizada no artigo em questão é do tipo experimental, e teve como objetivo comparar o comportamento das cinco principais funções de similaridade aplicadas a problemas de consenso. Foi realizada uma simulação de consenso a partir de dados aleatórios aplicando tais funções e seus resultados analisados sob a métrica do índice de consenso final.
+A pesquisa realizada no artigo em questão é do tipo experimental, e teve como objetivo comparar o comportamento das cinco principais funções de similaridade aplicadas a problemas de consenso. Foi realizada uma simulação de consenso a partir de dados aleatórios aplicando tais funções e seus resultados analisados sob a métrica do grau de consenso final.
 
-Formalmente, o objetivo desta comparação pode ser definido no formato GQM como analisar as funções de distância aplicadas ao suporte ao consenso com a intenção de compará-las a respeito de seus índices finais de consenso do ponto de vista dos projetistas de sistemas de suporte ao consenso no contexto dos dados resultantes de uma simulação.
+Formalmente, o objetivo desta comparação pode ser definido no formato **GQM** **como analisar** as funções de distância aplicadas ao suporte ao consenso **com a intenção de** compará-las **a respeito de** seus graus de consenso finais **do ponto de vista** dos projetistas de sistemas de suporte ao consenso **no contexto** dos resultantes de simulações envolvendo multiplos fatores.
 
 ## Execução do experimento
 
 ### Questões de pesquisa
 
-"*The application of the Manhattan, Euclidean, Cosine, Dice and Jaccard distance functions in GDM problems do not produce significant differences in the measurement of consensus*" [referencia ao artigo base], traduzindo: "A aplicação das funções de distância de Manhatan, Euclidiana, Cosseno, Dice e Jaccard em problemas GDM não produzem diferenças significativas ao mensurar consenso."
+"*The application of the Manhattan, Euclidean, Cosine, Dice and Jaccard distance functions in GDM problems do not produce significant differences in the measurement of consensus*" [@chiclana2013statistical], traduzindo: "A aplicação das funções de distância de Manhatan, Euclidiana, Cosseno, Dice e Jaccard em problemas GDM não produzem diferenças significativas ao mensurar consenso."
 
 ### Fatores e variáveis de resposta
 
 As variáveis independentes (e também fatores) utilizados no experimento são:
 
-..* Função de distância utilizada: Uma dentre cinco funções tomadas como predominantes na literatura (variável de controle).
-..* Total de participantes: Número de participantes utilizados no processo de consenso (simulação) $E_m:m=\{4,6,8,10,12\}$.
-..* Total de alternativas viáveis: Número de alternativas de solução viáveis $X_n:n=\{4,6,8\}$.
-..* Quantificadores Fuzzy: Além das funções de distância, quantificadores de maioria Fuzzy podem ter influência no resultado. Aqui foram usados "most", "asmany" e "leasthalf".
-..* Níveis de consenso: São relações de preferência entre alternativas associadas a maioras Fuzzy. São eles: (1) nível de pares de alternativas (compara cada alternativa entre si), (2) nível de alternativas (compara cada alternativa com as demais) e (3) nível da relação (comparação geral)
+\begin{itemize}
+\item Função de distância utilizada: Uma dentre cinco funções tomadas como predominantes na literatura (variável de controle).
+\item Total de participantes: Número de participantes utilizados no processo de consenso (simulação) $E_m:m=\{4,6,8,10,12\}$.
+\item Total de alternativas viáveis: Número de alternativas de solução viáveis $X_n:n=\{4,6,8\}$.
+\item Quantificadores Fuzzy: Além das funções de distância, quantificadores de maioria Fuzzy podem ter influência no resultado. Aqui foram usados "most", "asmany" e "leasthalf".
+\item Níveis de consenso: São relações de preferência entre alternativas associadas a maioras Fuzzy. São eles: (1) nível de pares de alternativas (compara cada alternativa entre si), (2) nível de alternativas (compara cada alternativa com as demais) e (3) nível da relação (comparação geral)
+\end{itemize}
 
 As variáveis de resposta são:
 
-..* Índice de concenso: Saldo final do processo de consenso que descreve o qual de acordo os participantes estão com o resulta: $cr\in[0,1]$
-..* Total de iterações: [use apenas no seu experiento]
-..* Diferença entre índice inicial e final de consenso: [use apenas no seu experimento]
+\begin{itemize}
+\item Grau de consenso: Saldo final do processo de consenso que descreve o qual de acordo os participantes estão com o resulta: $cr\in[0,1]$
+\end{itemize}
 
-### Níveis dos fatores
+### Níveis das variáveis
 
-Os níveis dos fatores estão definidos de acordo com a Tabela 1.
+Os níveis dos fatores de da variável de resposta (Índice de consenso) estão definidos de acordo com a tabela 1.
 
-\begin{tabular}{|p{4}|p{4}|}\hline
-Fator & Níveis \\ \hline \hline
-\bf Função de distância & Manhatan, Euclidean, Cosine, Dice, Jaccard \\ \hline
-\bf Participantes & 4, 6, 8, 10, 12 \\ \hline
-\bf Alternativas & 4, 6, 8 \\ \hline
-\bf Quantificadores & most, leasthalf, asmany \\ \hline
-\bf Níveis & 1, 2, 3 \\ \hline
+\begin{tabular}{|p{3.5cm}|p{3.5cm}|}\hline
+Variável & Níveis \\ \hline \hline
+\bf Função de distância & \{Manhatan, Euclidean, Cosine, Dice, Jaccard\} \\ \hline
+\bf Participantes & \{4, 6, 8, 10, 12\} \\ \hline
+\bf Alternativas & \{4, 6, 8\} \\ \hline
+\bf Quantificadores & \{most, leasthalf, asmany\} \\ \hline
+\bf Níveis & {1, 2, 3} \\ \hline
+\bf Índice de consenso & [0,1] \\ \hline
 \end{tabular}
-\caption{Tabela 1. Definição dos níveis dos fatores.}
+\begin{footnotesize} Tabela 1: Níveis das variáveis utilizadas no experimento\end{footnotesize}
 
 ### Hipótese nula
 
-A hipótese nula afirma que a utilização de duas funções de distância diferentes não produzem diferenças significativas no nível final de consenso.
+A hipótese nula afirma que a utilização de duas funções de distância diferentes não produz diferenças significativas no grau final de consenso.
 
 ### Unidade experimentais
 
-As unidade experimentais são os resultados da comparação entre cada duas funções de distância distintas dados cada combinação diferente de fatores.
+As unidades experimentais são os resultados da comparação entre cada duas funções de distância distintas dadas cada combinação diferente dos fatores.
 
 ### Design do experimento
 
-Trata-se de uma pesquisa experimental. Aqui os dados são produzidos pelo pesquisador com base na repetição de experimentos onde fatores são ajustados e variáveis resposta são observadas. Tipicamente há um ou poucos fatores importantes a ajustar a cada repetição (aqui temos a função de distância e os outro quatro fatores).
+Trata-se de uma pesquisa experimental. Aqui os dados são produzidos pelo pesquisador com base na repetição de experimentos onde fatores são ajustados e variáveis resposta são observadas. Tipicamente há um ou poucos fatores importantes a ajustar a cada repetição (aqui temos a função de distância e os outros quatro fatores).
 
-Para testar a hipótese acima, doze (12) conjuntos de relações de preferência (pares de alternativas) foram gerados aleatóriamente para cada combinação possível de participantes ($E_m:m\in M=\{4,6,8,10,12\}$) e alternativas ($X_n:n\in N=\{4,6,8\}$). As diferentes funções de distância foram aplicadas, por sua véz, para mensurar consenso nos três níveis possíveis (pares de alternativas, alternativas e relação geral), usando os três diferentes operadores quantificadores guiados OWA [arranje uma referência]. Todas as funções de distância foram testadas aos pares, $d_i\times d_j:i=\{1,2,3,4\},j=\{1,2,3,4,5\}$ ($\frac{5*5-5}{2}=10$ testes), e assim, foram realizadas um total de $12*|M|*|N|*3*3*10=14.200$ repetições.
+Para testar a hipótese nula, doze (12) conjuntos de relações de preferência (pares de alternativas) foram gerados aleatoriamente para cada combinação possível de participantes ($E_m:m\in M=\{4,6,8,10,12\}$) e alternativas ($X_n:n\in N=\{4,6,8\}$). As diferentes funções de distância foram aplicadas, por sua véz, para mensurar consenso nos três níveis possíveis (pares de alternativas, alternativas e relação geral), usando os três diferentes operadores quantificadores guiados OWA (Fuzzy) [@yager1988ordered]. Todas as funções de distância foram testadas aos pares, $d_i\times d_j:i=\{1,2,3,4\},j=\{1,2,3,4,5\}$ ($\frac{5*5-5}{2}=10$ testes), e assim, foram realizadas um total de $12*|M|*|N|*3*3*5=8100$ simulações e $|M|*|N|*3*3*10=1350$ análises.
 
 ### Execução
 
@@ -184,11 +190,15 @@ A execução do experimento envolve apenas dois passos:
 1. Execução de simulações de consenso. Uma para cada combinação de fatores.
 2. Análise estatística dos resultados.
 
+#### Simulação
+
+O autor original apenas descreve a simulação, sem apresentar um modelo operacional ou mesmo sua validação.
+
 #### Análise dos resultados
 
-Para cada par de funções de distância para comparação foram analisadas duas amostras relacionadas. O usual teste paramétricoutilizado nestes casos é o teste t. Contudo, este teste exige para sua aplicação, que assuma-se uma distribuição normal e independente dos dados na população do qual a amostra aleatória de preferências é retirada. O autor considerou que assumir isto é pouco realista, além de entender que evitando tais premissas poderia tornar seus reultados mais generalistas. Assim, adotou um teste não-paramétrico como sendo o mais adequado [36,45,49 no artigo]
+Para cada par de funções de distância em comparação são analisadas duas amostras relacionadas. O usual teste paramétrico utilizado nestes casos é o teste t (segundo autor original). Contudo, este teste exige para sua aplicação que assumamos uma distribuição normal e independente dos dados na população do qual a amostra aleatória é retirada. O autor considerou que assumir isto é pouco realista, além de entender que evitando tais premissas poderia tornar seus resultados mais generalistas. Assim, adotou um teste não-paramétrico como sendo o mais adequado [@lehmann1975nonparametrics; @siegal1956nonparametric; @wilcoxon1945individual]
 
-Para dados contínuos e duas amostras relacionadas (pares e alternativas), o autor entendeu como adequado o teste não-paramétrico de ranking de Wilcoxon [14, 36, 42, 45, 49 no artigo]. O teste de Wilcoxon leva em consideração informações a respeito do sinal da diferença e também da magnitude desta para ranqueá-las apropriadamente. O ranking é a pessa chave para qualificação da significacia das diferenças entre os reultados neste método.
+Para dados contínuos e duas amostras relacionadas (pares e alternativas), o autor entendeu como adequado o teste não-paramétrico de *ranking* de Wilcoxon [@lehmann1975nonparametrics; @rohatgiintroduction; @siegal1956nonparametric; @wilcoxon1945individual]. O teste de Wilcoxon leva em consideração informações a respeito do sinal da diferença entre os valores comparados, além da magnitude destes, para ranqueá-los apropriadamente. O *ranking* é a peça chave para qualificação da significância das diferenças entre os resultados neste método.
 
 #### Instrumentação
 
@@ -196,22 +206,24 @@ Não houveram especificações ligadas a operação de instrumentos.
 
 ### Ameaças à validade
 
-#### Ameaças à validade interna
+O autor não menciona ameaças a validade.
 
-fdgfdgfdg
 
-#### Ameaças à validade de constructo
+# Reprodução do Experimento
 
-fdgdfgfdgdf
+Muitos dos elementos descritivos foram omitidos aqui na reprodução por serem idênticos aos do experimento original.
 
-#### Ameaças à validade externa
+## Objetivos
 
-dfgfdgfdgfd
+Aqui o objetivo consiste apenas em validar ou questionar os resultados originais.
 
-## Resultados
+### Design do experimento
 
-sdfsdfdsfds
+Trata-se de uma reprodução do um experimento. A maior parte deste trabalho replica o experimento original.
 
+Para testar a hipótese nula (a mesma do experimento original), doze (12) conjuntos de relações de preferência (pares de alternativas) foram gerados aleatoriamente para cada combinação possível de participantes ($E_m:m\in M=\{4,6,8,10,12\}$) e alternativas ($X_n:n\in N=\{4,6,8\}$). As diferentes funções de distância foram aplicadas, por sua véz, para mensurar consenso nos três níveis possíveis (pares de alternativas, alternativas e relação geral), usando os três diferentes operadores quantificadores guiados OWA, tal como no experimento sob reprodução. Com isto, um modelo operacional de um sistema de CRP foi aplicado à este ambiente simulado e executado um total de $12*|M|*|N|*3*3*5=8100$ vezes.
+
+No gráfico 1 abaixo, temos uma visão da dispersão dos dados gerados a partir de todas as simulações. Estes dados estão dispostos em um plano que coloca a distância utilizada em função do grau de consenso. Note que já é possível perceber uma nítida diferença no posicionamento dos percentis.
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -221,7 +233,7 @@ consensus %>%
   geom_boxplot(outlier.alpha = .0) +
   labs(x='Modelo de distância',  
     y='Consenso', 
-    title="Índices de consenso medidos por métrica de distância", 
+    title="Índices de consenso por métrica de distância", 
     subtitle="(distance, final consensus)", 
     caption="GDMR",
     color="quantificador") +
@@ -235,57 +247,92 @@ consensus %>%
     panel.border=element_blank())
 
 ```
+\begin{footnotesize}Gráfico 1: Gráfico de dispersão que nos dá uma visão geral dos dados tomando a distância em função do grau de consenso.\end{footnotesize}
 
-# Reprodução do Experimento
+Todas as funções de distância foram analisadas aos pares, $d_i\times d_j:i=\{1,2,3,4\},j=\{1,2,3,4,5\}$ ($\frac{5*5-5}{2}=10$ testes). Assim, foram realizadas um total de $|M|*|N|*3*3*10=1350$ análises.
 
-Precisamos avaliar um conjunto de variáveis em um exercício de visualização de correlações de dados através de marcas e canais. O objetivo de nossa investigação é entender os dados e as relações entre suas variáveis. Tendo isto em vista, é importante ser capaz de escolher as marcas e canais adequados para nossa análise.
+## Execução da reprodução
 
-A partir disto, devemos propor possíveis correlações alvo ligadas às relações entre variáveis que julguemos interessantes, para em seguida proceder a análise.
+### Fatores e variáveis de resposta
 
-# Resultados
+As variáveis independentes (e também fatores) utilizados no experimento original são repetidas aqui, além de mais duas utilizadas apenas nos questionamentos finais (em função das restrições de prazo):
 
-De acordo com o enunciado do Laboratório 2 checkpoint 02 da disciplina LPCC2, este documento deve conter gráficos plenamente legíveis (tanto o texto quanto os elementos) para um zoo de 100% em um documento pdf de duas colunas (os gráficos devem ter a largura de uma coluna) e seguir as boas práticas de visualização estudadas. Além de texto descrevendo a tarefa de visualização.
+\begin{itemize}
+\item Função de distância utilizada: Uma dentre cinco funções tomadas como predominantes na literatura (variável de controle).
+\item Total de participantes: Número de participantes utilizados no processo de consenso (simulação) $E_m:m=\{4,6,8,10,12\}$.
+\item Total de alternativas viáveis: Número de alternativas de solução viáveis $X_n:n=\{4,6,8\}$.
+\item Quantificadores Fuzzy: Além das funções de distância, quantificadores de maioria Fuzzy podem ter influência no resultado. Aqui foram usados "most", "asmany" e "leasthalf".
+\item Nível de consenso: São relações de preferência entre alternativas associadas a maioras Fuzzy. São eles: (1) nível de pares de alternativas (compara cada alternativa entre si), (2) nível de alternativas (compara cada alternativa com as demais) e (3) nível da relação (comparação geral).
+\item Completude*: Grandeza $\alpha \in [0,1]$ que vai de 0, onde a chance de um participante apontar sua preferência é aleatória, a 1, onde todos os participantes sempre apontam todas as suas preferêcias.
+\item Coerência*: Grandeza $\delta\in [0,1]$ que define coerência nas preferências dos participantes com base em simetria e comutatividade. Como o autor original não trata desta variável, tomamos como 0 (sem verificação de coerência) para nossa reprodução.
+\end{itemize}
 
-# Considerações
+Para as variáveis de resposta, incluí apenas mais uma, também apenas nos questionamentos finais (em função das restrições de prazo):
 
-Nossa base de dados conta com variáveis bem intuitivas, cada uma delas descreve alguma característica dos projetos. Vide tabela no final deste documento
+\begin{itemize}
+\item Grau de consenso: Saldo final do processo de consenso que descreve o quão de acordo os participantes estão com o resulta: $cr\in[0,1]$
+\item Diferença entre índice inicial e final de consenso*: Necessário para medir se o modelo de distância é excessivamente otimista ou pessimista. 
+\end{itemize}
 
-Na nossa análise buscaremos uma ou mais características da relação entre as variáveis **sloc\_end** e **sloc\_med**, explorando marcas e canais gráficos. Além de incluirmos eventualmente **activity\_period**, **team** e **lang** para posicionar nossas análises no nosso conjunto de dados.
+*Variáveis de resposta e fatores que julgo necessários, mas que não são tratados no experimento original. Em função das restrições de prazo do curso de FPCC (fundamento de Pesquisa em Ciência da Computação), apenas reproduzi o experimento do autor original, deixando estes ajustes para trabalhos futuros.
 
+### Níveis dos fatores
 
+Os níveis dos fatores e das variáveis de resposta estão definidos de acordo com as tabelas 2 e 3.
 
+\begin{tabular}{|p{3.5cm}|p{3.5cm}|}\hline
+Fator & Níveis \\ \hline \hline
+\bf Função de distância & \{Manhatan, Euclidean, Cosine, Dice, Jaccard\} \\ \hline
+\bf Participantes & \{4, 6, 8, 10, 12\} \\ \hline
+\bf Alternativas & \{4, 6, 8\} \\ \hline
+\bf Quantificadores & \{most, leasthalf, asmany\} \\ \hline
+\bf Níveis & \{1, 2, 3\} \\ \hline
+\bf Completude & [0,1] \\ \hline
+\bf Coerência & [0,1] \\ \hline
+\end{tabular}
+\begin{footnotesize} Tabela 2: Níveis dos fatores utilizados na reprodução\end{footnotesize}
 
+\begin{tabular}{|p{3.5cm}|p{3.5cm}|}\hline
+Variável & Níveis \\ \hline \hline
+\bf Grau de consenso & [0,1] \\ \hline
+\bf Diferença entre consenso inicial e final & [0,1] \\ \hline
+\end{tabular}
+\begin{footnotesize} Tabela 3: Níveis das variáveis de resposta utilizadas (ou apenas propostas) na reprodução\end{footnotesize}
 
+### Execução
 
+Tal como no experimento original, execução do experimento envolve apenas dois passos:
 
+1. Execução de simulações de consenso. Uma para cada combinação de fatores.
+2. Análise estatística dos resultados.
 
+#### Simulações
 
+Para a simulação, utilizei a plataforma [R](https://www.r-project.org/) e a IDE [RStudio](https://www.rstudio.com/) para criar meu modelo operacional. O código fonte utilizou como base um software livre de apoio ao consenso chamado [GDMR](https://github.com/rakelup/GDMR)(Group Decision Making R)[@urena2016gdm]. Daí um simulador simples foi desenvolvido embutido no próprio código do modelo.
 
+Para validação, me ative a apenas ao modelo operacional, por utilizar modelos conceituais já amplamente utilizados e validados na literatura [@cha2007comprehensive; @chen1995comparison; @deza2009encyclopedia; @wang1995comparative; @chiclana2004induced; @chiclana2007some; @dubois1985review; @fodorfuzzy; @herrera2003study; @klir1988fuzzy; @xu2003overview; @yager1988ordered; @zhou2008type; @zhou2011alpha; @kacprzyk1986group]. Neste contexto, o gráfico abaixo (gráfico 2), onde o consenso inicial (aleatório) é representado no eixo "Y" e o consenso final no eixo "X", demonstra o sucesso do meu modelo pela checagem $X-Y<0$ sendo igual a "*FALSE*" em todos os casos. Observando também que todos os pontos estão abaixo da diagonal (indica que $x\geq y$, sempre). Com isto temos uma evidência da validade do modelo. A eficiência poderia ser validada por comparação a outro modelo já comprovadamente eficiente, porém isto não é viável (pelo menos não nos prazos da disciplina de FPCC). Em alternativa, utilizamos novamente a validação visual. Perceba no gráfico 3 que a maioria das soluções alcançam um nível aceitável de consenso de 0.8.
 
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
+consensus %>% 
+  ggplot(aes(x= `final consensus`, y=`initial consensus`  , color = (`final consensus`-`initial consensus` < 0))) + 
+  geom_point(alpha = .3) + 
+  labs(y='Consenso inicial',  
+    x='Consenso final', 
+    title="Índices de consenso iniciais e finais", 
+    subtitle="(final consensus, initial consensus)", 
+    color="X - Y >= 0") +
+  theme(plot.title = element_text(face="bold",size = "17"),
+    plot.subtitle = element_text(size = "12"),
+    plot.caption = element_text(size="12"),
+    axis.title.x = element_text(size ="15"),
+    axis.title.y = element_text(size="15"),
+    axis.text.x = element_text(size="12"),
+    axis.text.y = element_text(size="12"),
+    panel.border=element_blank())
 
-
-
-
-## Variáveis de estudo
-
-Selecionamos para este relatório duas variáveis que serão alvo de comparações, medições e visualizações, são elas: **sloc\_end** e **sloc\_med**, outras variáveis também podem ser usadas na comparação como **lang** ou **team**. Nosso objetivo é observar seu comportamento, confirmando ou refutando certas perspectivas de correlação que chamaremos de questões e são descritas abaixo.
-
-# Análise
-
-A partir daqui analisaremos nossos dados com base em questões levantadas a partir de correlações entre variáveis. Neste estudo, o principal foco é a análise visual. Utilizaremos diversas variedades de gráficos estatísticos, canais de visualização e marcas.
-
-Um canal é uma dimensão usada para converter dados de uma tabela em uma visualização gráfica. Um canal pode ser de alta ou baixa magnitude, representando uma eficácia na visualização de informação maior ou menor. 
-
-Nosso primeiro objetivo é entender como o volume de código se comporta ao longo do tempo, e faremos isto comparando as variáveis **sloc\_end** e **sloc\_med**, sempre fazendo um paralelo com variáveis significativas como **lang** e/ou **team**, priorizando canais mais eficazes para variáveis alvo de análise.
-
-## **sloc\_end** e **sloc\_med**
-
-A principal relação entre estas duas variáveis é o tempo. **sloc\_med**, como já foi mencionado, mede o volume de código de um projeto na metade de seu tempo de vida (até o fim da medição dos dados), já **sloc\_end** mede o volume total de código no fim do período de medição. É de se esperar que **sloc\_med** sejá menor que **sloc\_end**, mas qual a proporção desta diferença?
-
-Para começar a responder esta pergunta poderíamos pensar em usar um gráfico de dispersão (*scatter plot*). O gráfico de dispersão posiciona todos os elementos observados como pontos em um plano cartesiano, onde x corresponde a uma variável e y à outra.
-
-Um bom tipo de gráfico para relacionar **sloc\_med** e **sloc\_end** é o *Dumbbell Plot*, que pode ser visto como uma variação do gráfico de dispersão. Nele o canal "posicionamento bidimensional" está representado na forma de pontos em um plano tal como o gráfico de dispersão. Porém, o eixo x apresenta duas variáveis e a progressão de uma até a outra, formando uma linha (o comprimento da linha é mais um canal). Abaixo está um *Dumbbell Plot* onde x descreve a variável **sloc\_med** e a distância entre ela e **sloc\_end**. Incluiremos também as variáveis **lang** e **team** nos canais cor dos pontos e dimensão vertical para posicionar melhor nosso gráfico nos nossos dados.
+```
+\begin{footnotesize}Gráfico 2: Demonstração de que o consenso inicial é sempre inferior ao final.\end{footnotesize}
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
 consensus %>% 
@@ -306,13 +353,29 @@ consensus %>%
     panel.background = element_rect(fill = "lightgray"))
 
 ```
+\begin{footnotesize}Gráfico 3: Densidade da variável "consenso final".\end{footnotesize}
 
-Observando os pontos e traços neste gráfico podemos ter a ideia de que talvez a maior parte do desenvolvimento ocorra entre o início e a primeira metade do projeto. Isto com base na diferença entre o comprimento dos traços que descrevem a distância entre **sloc\_med** e **sloc\_end**, e a distância entre **sloc\_med** e a origem de x. Porém, é uma conclusão muito inicial, pois há muitos pontos aglomerados de difícil visualização, além de alguns pontos com grandes distâncias entre **sloc\_med** e **sloc\_end**.
+#### Os dados
 
-Uma nova evidência para esta afirmação poderia ser obtida observando não as duas variáveis separadas, mas uma nova variável composta pela proporção entre elas. A fórmula $$\frac{sloc\_med*100}{sloc\_end}$$ nos traz este valor. Novamente, para posicionar melhor nossa visualização nos nossos dados, incluiremos as seguintes três variáveis no gráfico; **team**, **activity\_period** e **lang** nos canais dimensão horizontal, área do ponto e cor, respectivamente. Um *boxplot* para cada um de cem *breaks* (quando diferentes de vazio) ajuda a visualizar a relação.
+A execução das simulações proporcionou um conjunto de dados de 8100 registros, sendo estes compostos pelos seguintes campos:
 
+\begin{tabular}{|p{2.3cm}|p{2.3cm}|p{2.3cm}|}\hline
+Campo & Tipo & valores \\ \hline \hline
+\bf initial consensus & real & O grau de consenso inicial aleatório \\ \hline
+\bf final consensus & real & O grau de consenso final propriamente \\ \hline
+\bf iterations & inteiro & total de iterações até o consenso \\ \hline
+\bf distance & caracteres & o nome da função de distância \\ \hline
+\bf quantifier & caracteres & o nome do quantificador \\ \hline
+\bf experts & inteiro & o total de participantes \\ \hline
+\bf alternatives & inteiro & o total de alternativas \\ \hline
+\bf level & inteiro & o nível de consenso \{1,2,3\} \\ \hline
+\bf sample & inteiro & indica qual amostra aleatória foi utilizada (cada combinação de parâmetros tem 12 amostras) \\ \hline
+\end{tabular}
+\begin{footnotesize} Tabela 4: Campos no conjunto de dados\end{footnotesize}
 
+#### Análise
 
+Para cada par de funções de distância em comparação foram analisadas duas amostras relacionadas, tal como no experimento original. Utilizando o método de reamostragem sem reposição *bootstrap*[@efron1997improvements] podemos identificar a distribuição dos dados de consenso (pela mediana) para cada métrica de distância e para a diferença entre cada duas métricas. Observe que é possível visualizar uma distribuição gaussiana para a diferença entre as medianas de consenso para cada duas métricas, conforme o gráfico 4a abaixo, e para as medianas de consenso de cada métrica diretamente, conforme gráfico 4b.
 
 ```{r echo=FALSE}
 funcao_bootstrap <- function(data, indexes){
@@ -324,17 +387,31 @@ funcao_bootstrap <- function(data, indexes){
     return(d[1] - d[2])
 }
 
+funcao_bootstrap_mag <- function(data, indexes){
+    d = data %>% 
+      slice(indexes) %>% 
+      summarise(`final consensus` = median(`final consensus`)) %>% 
+      pull(`final consensus`)   
+    return(d[1])
+}
+
 funcao_bootstrap_2 <- function(data_){
     return (boot(data = data_, 
                    statistic = funcao_bootstrap,
-                   R = 1000))
+                   R = 800))
 }
 
-funcao_bootstrap_distribution <- function(distribution,titleArg){
+funcao_bootstrap_mag_2 <- function(data_){
+    return (boot(data = data_, 
+                   statistic = funcao_bootstrap_mag,
+                   R = 800))
+}
+
+funcao_bootstrap_distribution <- function(distribution,titleArg, binwidth_=.001){
   
   p1 <- distribution %>% 
   ggplot(aes(x = estatistica)) + 
-  geom_histogram(binwidth = .001, fill = "darkgray", color="white") + 
+  geom_histogram(binwidth = binwidth_, fill = "darkgray", color="white") + 
     labs(x=NULL,  
         y=NULL, 
         title=titleArg) +
@@ -349,16 +426,32 @@ funcao_bootstrap_distribution <- function(distribution,titleArg){
     return (p1)
 }
 
+funcao_bootstrap_mag_ci_tibble <- function(ci,m,n,title_,quantifier_,level_){
+  
+  result <- tibble(statistic = as.double(ci$t0), 
+                   experts = as.character(m,length=2),
+                   alternatives = as.character(n,length=2),
+                   title = title_,
+                   quantifier = quantifier_,
+                   level = ifelse(
+                     (as.integer(level_) > 1),
+                     ifelse((as.integer(level_) > 2),'Preferências','Alternativas')
+                     ,'Pares de alt.')
+                   
+                   )
+  return (result)
+}
+
 funcao_bootstrap_ci_tibble <- function(ci,m,n,title_,quantifier_,level_){
   
   result <- tibble(statistic = as.double(ci$t0),
                    statistic_count = ifelse(
-                     (as.double(ci$basic[4]) > 0.0 & as.double(ci$basic[5]) > 0)|
-                     (as.double(ci$basic[4]) < 0.0 & as.double(ci$basic[5]) < 0),1,0),
+                     (as.double(ci$basic[4]) > 0.0 & as.double(ci$basic[5]) > 0.0)|
+                     (as.double(ci$basic[4]) < 0.0 & as.double(ci$basic[5]) < 0.0),1,0),
                    basic_1 = as.double(ci$basic[4]), 
                    basic_2 = as.double(ci$basic[5]), 
-                   experts = as.character(m),
-                   alternatives = as.character(n),
+                   experts = as.character(m,length=2),
+                   alternatives = as.character(n,length=2),
                    title = title_,
                    quantifier = quantifier_,
                    #level = level_
@@ -373,12 +466,11 @@ funcao_bootstrap_ci_tibble <- function(ci,m,n,title_,quantifier_,level_){
 
 funcao_bootstrap_ci <- function(bootstraps){
   
-  #return (boot.ci(bootstraps, conf = 0.95, type = "basic"))
-  return (boot.ci(bootstraps, conf = 0.95, type = "bca"))
+  return (boot.ci(bootstraps, conf = 0.95, type = "basic"))
+  #return (boot.ci(bootstraps, conf = 0.95, type = "bca"))
 }
 
 ```
-
 ```{r echo=FALSE}
 
 bootstraps_ma_co <- funcao_bootstrap_2(consensus %>% filter(distance == 'manhattan' | distance == 'cosine')) 
@@ -402,7 +494,6 @@ bootstraps_eu_ja <- funcao_bootstrap_2(consensus %>% filter(distance == 'euclide
 bootstraps_di_ja <- funcao_bootstrap_2(consensus %>% filter(distance == 'dice' | distance == 'jacard'))
 
 ```
-
 ```{r echo=FALSE}
 
 p1 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_ma_co$t)),"Manhattan X Cosine")
@@ -426,17 +517,215 @@ p9 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_eu
 p10 <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_di_ja$t)),"Dice X Jacard")
 
 ```
-
 ```{r echo=FALSE}
 
 grid.arrange(arrangeGrob(p1,p2,p3,p4,ncol=2,widths=c(1,1)),
     arrangeGrob(p5,p6,p7,p8,p9,p10,ncol=2,widths=c(1,1)),
     heights=c(2,3))
 ```
+\begin{footnotesize}Gráfico 4a: Distribuição da diferença de consenso entre cada par de funções de distância.\end{footnotesize}
 
-No gráfico acima é possível perceber que a maior parte dos pontos está acima de 60%, o que nos leva a concluir que geralmente mais da metade do código é escrito no início do projeto. Além disto, é frequênte, de acordo com o gráfico, projetos com 80% ou 90% do desenvolvimento ocorrido na primeira metade de sua vida. Observando os *bosplots* pode-se perceber apenas um *box* abaixo de 50%, e com apenas um projeto.
+```{r echo=FALSE}
 
-Uma visualização mais clara talvez possa vir com um gráfico de dispersão (*scatter plot*) simples, que descreve a posição de cada projeto em um plano cartesiano onde x é o **sloc\_end** e y é **sloc\_med**. Novamente, incluiremos também as variáveis **lang** e **team** nos canais cor e área dos pontos para posicionar melhor nosso gráfico nos nossos dados.
+bootstraps_mag_ma <- funcao_bootstrap_mag_2(consensus %>% filter(distance == 'manhattan')) 
+
+bootstraps_mag_eu <- funcao_bootstrap_mag_2(consensus %>% filter(distance == 'euclidean'))
+
+bootstraps_mag_di <- funcao_bootstrap_mag_2(consensus %>% filter(distance == 'dice'))
+
+bootstraps_mag_ja <- funcao_bootstrap_mag_2(consensus %>% filter(distance == 'jacard'))
+
+bootstraps_mag_co <- funcao_bootstrap_mag_2(consensus %>% filter(distance == 'cosine'))
+
+```
+```{r echo=FALSE}
+
+p1b <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_mag_ma$t)),"Manhattan",.0005)
+
+p2b <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_mag_eu$t)),"Euclidean",.0005)
+
+p3b <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_mag_di$t)),"dice",.0005)
+
+p4b <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_mag_ja$t)),"Jacard",.0005)
+
+p5b <- funcao_bootstrap_distribution(tibble(estatistica = as.double(bootstraps_mag_co$t)),"Cosine",.0005)
+
+```
+```{r echo=FALSE}
+
+grid.arrange(arrangeGrob(p1b,p2b,p3b,p4b,ncol=2,widths=c(1,1)),
+    arrangeGrob(p5b,ncol=2,widths=c(1,1)),
+    heights=c(2,1))
+```
+\begin{footnotesize}Gráfico 4b: Distribuição de consenso para cada função de distância.\end{footnotesize}
+
+O autor utilizou o teste não-paramétrico de Wilcoxon, porém, como já mencionado, pretendo utilizar Intervalos de Confiança [@gardner1986confidence] com *Bootstrap* e Regressão Linear [@neter1989applied]. Intervalos de confiança para reproduzir o mesmo cenário do experimento original (substituindo o teste de Wilcoxon) e por ter a comprovação gráfica de que os dados seguem a distribuição normal. Regressão linear para obter uma informação definitiva do quanto a variação da função de distância descreve o comportamento dos dados, sem ignorar os demais fatores.
+
+#### Instrumentação
+
+Como já mencionado, utilizei a plataforma [R](https://www.r-project.org/) e a IDE [RStudio](https://www.rstudio.com/) para criar meu modelo operacional. O código fonte utilizou como base um software livre de apoio ao consenso chamado [GDMR](https://github.com/rakelup/GDMR) (*Group Decision Making R*) [@urena2016gdm].
+
+### Ameaças à validade
+
+#### Internas
+
+Como ameaça a validade interna, posso apontar defeitos no código do modelo operacional ou do simulador. Para evitar tais ameaças, foram realizados testes no código do modelo (não apliquei uma metodologia de testes mais rigoroza em função das restrições de prazo da disciplina) e seu sistema base (GDMR) já contava com seus próprios testes (reportados pelo autor, mas não disponibilizados publicamente). A validação do modelo operacional também evita ameaças internas.
+
+#### De constructo
+
+Não levar em consideração o índice de consenso inicial (aleatório) pode ser uma importante ameaça ao constructo. Como é possível observar no gráfico 5 abaixo, para o quantificador "*leasthalf*", o consenso inicial e final são sempre iguais. Isto implica em uma função de distância demasiadamente otimista, mas que parece eficiente nos resultados. Esta ameaça só poderia, de fato, ser eliminada se mudássemos a variável de resposta do experimento de grau de consenso final para a diferença entre grau inicial e final de consenso.
+
+```{r echo=FALSE}
+
+consensus %>% 
+  mutate(consensus=`final consensus`-`initial consensus`) %>%
+  ggplot(aes(y= consensus, x=distance  , color = quantifier)) + 
+  geom_jitter(alpha = .2, width = .2) + 
+  geom_boxplot(outlier.alpha = .0) +
+  labs(x='Modelo de distância',  
+    y='(Consenso final - Consenso inicial)', 
+    title="Índices de consenso por métrica de distância", 
+    subtitle="(distance, \"final consensus\"-\"initial consensus\")", 
+    caption="GDMR",
+    color="quantificador") +
+  theme(plot.title = element_text(face="bold",size = "17"),
+    plot.subtitle = element_text(size = "12"),
+    plot.caption = element_text(size="12"),
+    axis.title.x = element_text(size ="15"),
+    axis.title.y = element_text(size="15"),
+    axis.text.x = element_text(size="12"),
+    axis.text.y = element_text(size="12"),
+    panel.border=element_blank())
+
+```
+\begin{footnotesize}Gráfico 5: Gráfico de dispersão que nos dá uma visão geral do ganho no grau de consenso após o processo, tomando a diferença entre consenso inicial e final em função da distância.\end{footnotesize}
+
+Além da ameaça acima, o autor original (e este autor também, em função do prazo) negligenciou a informação "número de iterações necessárias ao consenso", o que pode comprometer o resultado. Poucas iterações pode ser sinal de eficiência ou outro indício de excesso de otimismo. Diferenciar estas duas indicações poderia ser feita, novamente, tomando o consenso inicial como medida de otimismo (solucionando duas ameaças ao mesmo tempo).
+
+#### Externas
+
+Ameaças externas só poderiam vir das plataformas de desenvolvimento e de análise aplicadas (R e RStudio). O que é pouco provável.
+
+
+# Resultados
+
+Aqui trataremos dos resultados obtidos no nosso experimento fazendo um paralelo com os resultados do experimento original. Como dito anteriormente, utilizamos intervalos de confiança com *bootstrap* e regressão linear para analisar os dados.
+
+## Convergência
+
+Em um primeiro momento, vamos analisar a magnitude ou convergência de consenso para cada função de distância, ainda sem comparações. O gráfico 6 abaixo exibe o centro do intervalo de confiança da mediana à 95% de confiança para cada conjunto de parâmetros {quantificador, função de distância, alternativas e participantes}.
+
+```{r echo=FALSE}
+
+aux_mag=tibble()
+M=c(4,6,8,10,12)
+N=c(4,6,8)
+quantifiers=c("asmany","most","leasthalf")
+levels=c(1:3)
+
+#m=4
+#n=4
+#level_=1
+#quantifier_='asmany'
+
+for (m in M)
+{
+  for (n in N)
+  {
+    for (level_ in levels)
+    {
+      for (quantifier_ in quantifiers)
+      {
+        aux_mag=bind_rows(aux_mag,funcao_bootstrap_mag_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_mag_2(
+            consensus%>%filter(distance=='manhattan',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
+            )),
+          m,
+          n,
+          "Manhattan",
+          quantifier_,
+          level_))
+        aux_mag=bind_rows(aux_mag,funcao_bootstrap_mag_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_mag_2(
+            consensus%>%filter(distance=='euclidean',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
+            )),
+          m,
+          n,
+          "Euclidean",
+          quantifier_,
+          level_))
+        aux_mag=bind_rows(aux_mag,funcao_bootstrap_mag_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_mag_2(
+            consensus%>%filter(distance=='dice',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
+            )),
+          m,
+          n,
+          "Dice",
+          quantifier_,
+          level_))
+        aux_mag=bind_rows(aux_mag,funcao_bootstrap_mag_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_mag_2(
+            consensus%>%filter(distance=='jacard',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
+            )),
+          m,
+          n,
+          "Jacard",
+          quantifier_,
+          level_))
+        aux_mag=bind_rows(aux_mag,funcao_bootstrap_mag_ci_tibble(
+          funcao_bootstrap_ci(funcao_bootstrap_mag_2(
+            consensus%>%filter(distance=='cosine',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
+            )),
+          m,
+          n,
+          "Cosine",
+          quantifier_,
+          level_))
+      }
+    }
+
+  }
+}
+
+```
+```{r echo=FALSE}
+
+aux_mag %>%
+  group_by(experts,alternatives,title,quantifier)%>%
+  mutate(statistic=mean(statistic))%>%
+ggplot(aes(experts, alternatives, fill = statistic)) + 
+  geom_tile(colour = "white") + 
+  facet_grid(title~quantifier) + 
+  geom_text(aes(label=round(statistic,2)), size=2.5, color="black", alpha=.2,fontface="bold") +
+  scale_fill_gradient(low="red", high="green") +
+  labs(x="Quantificador",
+       y="Métrica de distância",
+       title = "Matriz de magnitude de consenso", 
+       fill=NULL) +
+    theme(plot.title = element_text(face="bold",size = "17"),
+        plot.caption = element_text(size="12"),
+        axis.title.y = element_text(size="12"),
+        axis.title.x = element_text(size="12"),
+        axis.text.x = element_text(angle=60, hjust=1),
+        axis.text.y = element_text(angle=90, hjust=1),
+        strip.text.y = element_text(angle = 0))
+
+```
+\begin{footnotesize}Gráfico 6: Quadro de magnitudes de consenso com base em IC à 95% de significância e envolvendo quatro dos fatores do experimento (total de alterntivas, total de participantes, quatificadores e distâncias).\end{footnotesize}
+
+Observe no gráfico que as distâncias de Manhatan, Euclidiana, Cosseno e Jaccard parece ter boas medianas no geral. Porém, Dice tem valores muito baixos para o quantificador "*asmany*" e "*most*". As distâncias de Euclides e de Manhattan tem valores praticamente iguais. Note ainda que não existem consensos piores que 0.5, o aleatório. Constatação que ser de evidência à validade do modelo.
+
+Para finalizar, perceba que "leasthalf" apresenta os melhores índices de consenso. Lembrando que este quantificador apresenta uma importante ameaça a sua validade neste experimento (e por consequência no experimento original também), por demonstrar ser um modelo de distância muito otimista, atingindo o consenso algumas vezes sem nenhuma iteração.
+
+## Comparações
+
+Comparações pareadas, tal como no experimento original, são o ponto de partida desta análise. Os gráficos 7a e 7b apresentam uma análise por intervalo de confiança e *bootstrap* para cada combinação de fatores tomados todos os pares de combinações. Aqui as métricas são comparadas em pares e, à 95% de confiança, caso o intervalo de confiança da diferença entre as medianas do grau de consenso medido não inclua zero, são classificadas como significativamente diferentes.
+
+Para o gráfico 7a, no eixo x está cada valor utilizado para o parâmetro "total de participantes", agrupado por quantificador. No eixo y estão os totais de alternativas utilizados, agrupados por nível de consenso. A escala e cores representa cada uma das 10 comparações possível, sendo o vermelho igual à 7 comparações e o verde igual à 9. Estas cores representam o total de comparações que apresentaram diferença à 95% de significância (o mínino foi 7 e o máximo foi 9).
+
+Para o gráfico 7b, o eixo x também mostra cada valor utilizado para o parâmetro "total de participantes", agora agrupados por comparação entre distâncias. No eixo y estão os totais de alternativas utilizados, agrupados por nível de consenso. A escala e cores representa cada um dos 3 níveis de consenso, sendo o vermelho igual à 0 níveis e o verde igual à 3 níveis. Estas cores representam em que níveis tais comparações apresentam diferença à 95% de confiança.
+
+Em particular, observando os gráficos abaixo, podemos comparar nossos resultados a alguns dos resultados do experimento original.
 
 ```{r echo=FALSE}
 
@@ -454,100 +743,100 @@ for (m in M)
 {
   for (n in N)
   {
-    for (level in levels)
+    for (level_ in levels)
     {
-      for (quantifier in quantifiers)
+      for (quantifier_ in quantifiers)
       {
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='manhattan'|distance=='cosine',experts==m,alternatives==n)
+            consensus%>%filter(distance=='manhattan'|distance=='cosine',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Manhattan X Cosine",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='manhattan'|distance=='euclidean',experts==m,alternatives==n)
+            consensus%>%filter(distance=='manhattan'|distance=='euclidean',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Manhattan X Euclidean",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='manhattan'|distance=='dice',experts==m,alternatives==n)
+            consensus%>%filter(distance=='manhattan'|distance=='dice',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Manhattan X Dice",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='manhattan'|distance=='jacard',experts==m,alternatives==n)
+            consensus%>%filter(distance=='manhattan'|distance=='jacard',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Manhattan X Jacard",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='cosine'|distance=='euclidean',experts==m,alternatives==n)
+            consensus%>%filter(distance=='cosine'|distance=='euclidean',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Cosine X Euclidean",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='cosine'|distance=='dice',experts==m,alternatives==n)
+            consensus%>%filter(distance=='cosine'|distance=='dice',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Cosine X Dice",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='cosine'|distance=='jacard',experts==m,alternatives==n)
+            consensus%>%filter(distance=='cosine'|distance=='jacard',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Cosine X Jacard",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='euclidean'|distance=='dice',experts==m,alternatives==n)
+            consensus%>%filter(distance=='euclidean'|distance=='dice',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Euclidean X Dice",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='euclidean'|distance=='jacard',experts==m,alternatives==n)
+            consensus%>%filter(distance=='euclidean'|distance=='jacard',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Euclidean X Jacard",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
         aux=bind_rows(aux,funcao_bootstrap_ci_tibble(
           funcao_bootstrap_ci(funcao_bootstrap_2(
-            consensus%>%filter(distance=='dice'|distance=='jacard',experts==m,alternatives==n)
+            consensus%>%filter(distance=='dice'|distance=='jacard',experts==m,alternatives==n,level==level_, quantifier==quantifier_)
             )),
           m,
           n,
           "Dice X Jacard",
-          quantifier,
-          level))
+          quantifier_,
+          level_))
       }
     }
 
@@ -555,10 +844,6 @@ for (m in M)
 }
 
 ```
-
-Veja a eficácia do canal "posicionamento no plano", apenas com base no gráfico acima já podemos perceber claramente dois atributos desta relação. O primeiro aponta que de fato, como já poderíamos supor, **sloc\_end** é maior que **sloc\_med** aparentemente em todos os casos. Perceba que não há nenhum ponto acima da diagonal principal do nosso gráfico. Neste momento, não podemos garantir que esta afirmação é verdade para todos os casos, pois os canais de visualização geralmente proveem apenas uma direção para a análise. Em buscar de uma resposta categórica, precisamos de um modelo. Veja abaixo.
-
-
 ```{r echo=FALSE}
 
 aux_new <- aux %>% group_by(experts,alternatives,quantifier,level) %>% summarise(statistic_count = sum(statistic_count)) 
@@ -567,10 +852,11 @@ aux_new %>%
 ggplot(aes(experts, alternatives, fill = statistic_count)) + 
   geom_tile(colour = "white") + 
   facet_grid(level~quantifier) + 
+  geom_text(aes(label=round(statistic_count,2)), size=3, color="black", alpha=.4,fontface="bold") +
   scale_fill_gradient(low="red", high="green") +
   labs(x="Quantificador",
        y="Nível",
-       title = "Matriz de comparações entre métricas de distância", 
+       title = "Matriz de comparações entre distância", 
        fill="Comparações") +
     theme(plot.title = element_text(face="bold",size = "17"),
         plot.caption = element_text(size="12"),
@@ -579,6 +865,10 @@ ggplot(aes(experts, alternatives, fill = statistic_count)) +
         axis.text.x = element_text(),
         axis.text.y = element_text(),
         strip.text.y = element_text(angle = 90))
+```
+\begin{footnotesize}Gráfico 7a: Quadro de comparações com base em IC à 95% de significância e envolvendo quatro dos fatores do experimento (total de alterntivas, total de participantes, quatificadores e níveis de consenso). A cor verde indica que 9 comparações entre distâncias apresentarm diferença. Já a cor vermelha, apenas 7.\end{footnotesize}
+
+```{r echo=FALSE}
 
 aux_new <- aux %>% group_by(experts,alternatives,quantifier,title) %>% summarise(statistic_count = sum(statistic_count))
 
@@ -586,10 +876,11 @@ aux_new %>%
 ggplot(aes(experts, alternatives, fill = statistic_count)) + 
   geom_tile(colour = "white") + 
   facet_grid(title~quantifier) + 
+  geom_text(aes(label=round(statistic_count,2)), size=2.5, color="black", alpha=.4,fontface="bold") +
   scale_fill_gradient(low="red", high="green") +
   labs(x="Quantificador",
        y="Comparação",
-       title = "Matriz de comparações entre métricas de distância", 
+       title = "Matriz de comparações entre distância", 
        fill="Níveis") +
     theme(plot.title = element_text(face="bold",size = "17"),
         plot.caption = element_text(size="12"),
@@ -604,10 +895,45 @@ ggplot(aes(experts, alternatives, fill = statistic_count)) +
 
 
 ```
+\begin{footnotesize}Gráfico 7b: Quadro de comparações com base em ICà 95% de significância e envolvendo quatro dos fatores do experimento (total de alterntivas, total de participantes, quatificadores e comparações pareadas entre distâncias). A cor verde indica que 3 níveis e consenso apresentarm diferença. Já a cor vermelha, zero.\end{footnotesize}
 
-Agora podemos afirmar categoricamente que nenhum projeto em nossa base encolheu (refatoramento) entre a metade e o fim de sua vida. O segundo atributo da relação entre estas duas variáveis diz respeito à linearidade. É possível perceber que a figura composta pelos pontos no gráfico forma uma linha muito nítida à quase que exatos 45° de inclinação, bem em cima da diagonal principal do gráfico. Isto sugere que os valores de **sloc\_med** e **sloc\_end** são muito parecidos, o que nos leva a crer que a maior parte do desenvolvimento ocorra na primeira metade da vida dos projetos na nossa base de dados, como os dois gráficos anteriores já demonstravam.
+Tal como o autor original  propôs, analisarei cada nível de consenso separadamente.
 
-Novamente os canais de visualização nos apontam a direção da análise, mas para responder se a maior parte do desenvolvimento realmente ocorre no início do projeto devemos recorrer aos modelos. Através de um coeficiente de correlação linear entre **sloc\_med** e **sloc\_end** podemos ter a confirmação que buscamos. Nesta correlação sempre retornará um valor entre -1 e 1, onde -1 representa uma perfeita correlação decrescente, 0 a ausência de correlação e 1 representa uma correlação crescente forte. Aqui calculamos a correção entre estas variáveis de três métodos diferentes.
+### Nível de pares de alternativas
+
+Conforme resultado obtido no experimento original, perceba no gráfico 7a que o número de comparações que coinsidem nunca diminui quando aumentamos o total de participantes e fixamos as alternativas. O mesmo ocorre se fixarmos as alternativas e aumentarmos os participantes. Como exceção para estas regras podemos apontar a coluna do quantificador "*most*" com quatro alternativas. Este resultado é coerente com o obtido no experimento original.
+
+### Nível de alternativas
+
+Voltando ao gráfico 7a, tal como o autor reportou, a quantidade de comparações significativamente diferentes (à 95% de significância) aumenta a media que o total de participantes aumenta, salvo uma única exceção entre 4 e 6 participantes no quantificador "*most*" com quatro alternativas.
+
+### Nível de relacionamento geral
+
+Para este nível o autor original faz apenas uma comparação em magnitude de consenso. Podemos fazer o mesmo com base no gráfico 6, além de notarmos no gráfico 7a a mesma regra dos níveis anteriores: quanto maior o número de participantes, maior a divergência.
+
+No gráfico 6, observamos que há pouca ou nenhuma variação na magnitude do grau de consenso a medida que o número de participantes ou alternativas aumenta, conclusão que distoa dos resultados do autor original. Em concordância com os resultados originais, as distâncias de Manhattan e Euclidiana, equivalentes em quase todos os casos (segundo o gráfico 6 de magnitude), apresentam os maiores graus de consenso. Em seguida vem a distância Cosseno e Jaccard e por ultimo Dice. Vale frizar que para a análise da magnitude, como identificamos que o quantificador "*leasthalf*" é excessivamente otimista, devemos levar os outros em maior consideração.
+
+### Sumarizando
+
+Observando agora o gráfico 7b, tal como o autor original, não podemos afirmar nenhuma diferença entre as distâncias euclidiana e de Manhattan em nenhum dos três níveis. Tal resultado é interessante, visto que, de acordo com nossa análise de magnitude, a distância euclidiana e a distância de Manhattan, além da distância cosseno, apresentam os maiores graus de consenso no geral.
+
+A distância cosseno também apresenta semelhanças pontuais com a distância euclidiana (para o quantificador "*most*" e 4 ou 6 participantes), com Jaccard em boa parte do quantificador "*asmany*" e com Manhattan em um padrão muito semelhante ao da distância euclidiana.
+
+Com isto podemos concluir que podemos aplicar a distância Euclidiana ou a distância de Manhattan e ganharemos tanto na magnitude quanto com relação as demais funções de distância (mesmo resultado do autor original). Não há distinsão significativa mentre estas duas distância como pode ser comprovado no gráfica 7b, onde não foi identificado nenhuma diferença significativa em nenhum nível de consenso. Isto é coerente com o resultado do gráfico 7a, onde todas as céluas guardam pelo menos uma comparação diferente (a escala só vai até 9.0).
+
+## Regressão Linear
+
+O modelo de regressão que propus seguirá a mesma lógica comparativa pareada do experimento original, analisando as distâncias duas à duas. Utilizamos duas estratégias associadas a regressão, o cálculo do $R^2$ e, novamente, o intervalo de confiança para cada coeficiente da equação linear resultante. Com isto, considerando sempre um $p\leq0.05$, comprovamos as afirmações apontadas anteriormente e chegamos a algumas novas, conforme veremos em seguida.
+
+### Regressão e $R^2$
+
+O $R^2$ mede o o quão um variável é capaz de descrever o comportamento da outra. No gráfico 8 apresento um quadro comparativo que coloca lado à lado o $R^2$ de cada um dos fatores do experimento para cada auma das dez comparações possível mais um cenáro geral, sempre com um $p\leq 0.05$. Perceba no gráfico que o fator que melhor descreve o grau de consenso é o quantificador, chegando a um $R^2$ superior a 0.8 (o que significa que a variável quantificador descreve 80% do comportamento da variável consenso) para a comparação Manhatan X Euclidean (a mais promissora, de acordo com a análise anterior), além de descrever 33% do comportamento no geral.
+
+Tratando exclusivamente da relação entre consenso e distância, chegamos a um resultado um pouco diferente do que chegamos para Intervalos de confiança. Como antes, as distâncias de Manhattan e Euclidiana não apresentam diferença considerável à pelo menos 95% de significância. Já Jaccard, que na análise anterior parecia bem diferente das outras duas, agora interfere no consenso em apenas 0.034%, com relação a escolher as distâncias Euclidiana ou de Manhattan, à um $p\leq0.05$. Resultado que distoa das análises anteriores e até do experimento original, onde utilizou-se teste de hipóteses. Perceba ainda que todas estas comparações incluem a distância de Manhattan e a distância Euclidiana, as mais promissoras em magnitude de consenso (de acordo com a análise anterior).
+
+Entenda que na análise anterior, tal como fez o autor, não comparo magnitude de diferença, apenas as identifico com 95% de significância. Com base na natureza da análise feita, qualquer diferença significativa apareceria nos dados, ainda que de baixa magnitude. Por isto não percebemos semelhanta entre Jaccard, Euclidean e Manhattan pela análise anterior (já que temos apenas um $R^2\simeq 0.00034$).
+
+Uma evidência da semelhança entre Jaccard e a dupla Euclidean e Manhattan pode ser retirado do gráfico 1, no início deste relatório. Perceba naquele gráfico que as distribuições das distâncias de Euclides e de Manhattan realmente são quase idénticas, porém a distância de Jaccard se aproxima muito das duas, exceto para o quantificador "*asmany*". Esta pode ser a causa para o modelo de regressão não ter identificado diferença considerável entre elas.
 
 ```{r echo=FALSE}
 
@@ -622,9 +948,22 @@ funcao_correlation_matrix <- function(data_,model){
 }
 
 aux_models=data.frame()
+aux_mc=data.frame()
+aux_me=data.frame()
+aux_mj=data.frame()
+aux_md=data.frame()
+aux_ec=data.frame()
+aux_ej=data.frame()
+aux_ed=data.frame()
+aux_jc=data.frame()
+aux_jd=data.frame()
+aux_dc=data.frame()
+
 
 names<-c("Consenso","Distância","Nível","Quantificador","Alternativas","Especialistas")
 values<-c("final consensus","distance","level","quantifier","alternatives","experts")
+x=2
+
 
 for(x in 1:6){
   coe=NaN
@@ -632,42 +971,135 @@ for(x in 1:6){
     coe=funcao_correlation_matrix(consensus,`final consensus` ~ consensus[[values[x]]])
     aux_models=rbind(aux_models,data.frame(
       "x_"=names[x],
-      "y_"="Consenso",
+      "y_"="Geral",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='manhattan'|distance=='cosine'),`final consensus` ~ (consensus%>%filter(distance=='manhattan'|distance=='cosine'))[[values[x]]])
+    aux_mc=rbind(aux_mc,data.frame(
+      "x_"=names[x],
+      "y_"="Manhattan X Cosine",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='manhattan'|distance=='euclidean'),`final consensus` ~ (consensus%>%filter(distance=='manhattan'|distance=='euclidean'))[[values[x]]])
+    aux_me=rbind(aux_me,data.frame(
+      "x_"=names[x],
+      "y_"="Manhattan X Euclidean",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='manhattan'|distance=='jacard'),`final consensus` ~ (consensus%>%filter(distance=='manhattan'|distance=='jacard'))[[values[x]]])
+    aux_mj=rbind(aux_mj,data.frame(
+      "x_"=names[x],
+      "y_"="Manhattan X Jacard",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='manhattan'|distance=='dice'),`final consensus` ~ (consensus%>%filter(distance=='manhattan'|distance=='dice'))[[values[x]]])
+    aux_md=rbind(aux_md,data.frame(
+      "x_"=names[x],
+      "y_"="Manhattan X Dice",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='euclidean'|distance=='cosine'),`final consensus` ~ (consensus%>%filter(distance=='euclidean'|distance=='cosine'))[[values[x]]])
+    aux_ec=rbind(aux_ec,data.frame(
+      "x_"=names[x],
+      "y_"="Euclidean X Cosine",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='euclidean'|distance=='jacard'),`final consensus` ~ (consensus%>%filter(distance=='euclidean'|distance=='jacard'))[[values[x]]])
+    aux_ej=rbind(aux_ej,data.frame(
+      "x_"=names[x],
+      "y_"="Euclidean X Jacard",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='euclidean'|distance=='dice'),`final consensus` ~ (consensus%>%filter(distance=='euclidean'|distance=='dice'))[[values[x]]])
+    aux_ed=rbind(aux_ed,data.frame(
+      "x_"=names[x],
+      "y_"="Euclidean X Dice",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='jacard'|distance=='cosine'),`final consensus` ~ (consensus%>%filter(distance=='jacard'|distance=='cosine'))[[values[x]]])
+    aux_jc=rbind(aux_jc,data.frame(
+      "x_"=names[x],
+      "y_"="Jacard X Cosine",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='jacard'|distance=='dice'),`final consensus` ~ (consensus%>%filter(distance=='jacard'|distance=='dice'))[[values[x]]])
+    aux_jd=rbind(aux_jd,data.frame(
+      "x_"=names[x],
+      "y_"="Jacard X Dice",
+      coe))
+  }
+  
+  if(values[x] != "final consensus"){
+    coe=funcao_correlation_matrix(consensus%>%filter(distance=='dice'|distance=='cosine'),`final consensus` ~ (consensus%>%filter(distance=='dice'|distance=='cosine'))[[values[x]]])
+    aux_dc=rbind(aux_dc,data.frame(
+      "x_"=names[x],
+      "y_"="Dice X Cosine",
       coe))
   }
  
 }
 
+aux_models=rbind(aux_models,aux_mc,aux_me,aux_mj,aux_md,aux_ec,aux_ej,aux_ed,aux_jc,aux_jd,aux_dc)
+
 
 ```
-
 ```{r echo=FALSE}
 
 aux_models %>% 
-  ggplot(aes(y= y_, x=x_, color = coe, size = coe,label=coe)) + 
+  ggplot(aes(y= y_, x=x_, color = coe, size = coe,
+             label=coe)) + 
   geom_point() + 
-  geom_text(aes(label=round(coe,3)), size=5, color="black", fontface="bold") +
-  scale_size_continuous(range=c(8,20)) +
-  scale_color_continuous(low="darkgray",high="green") +
+  geom_text(aes(label=round(coe,5)), size=4, color="black", fontface="bold") +
+  scale_size_continuous(range=c(4,15)) +
+  scale_color_continuous(low="lightgray",high="green") +
+  scale_y_discrete(position = "right") +
   labs(x=NULL,  
     y=NULL, 
-    title="Correlação entre o consenso e demais variáveis", 
+    title="Correlação entre consenso e demais variáveis", 
     subtitle="(all variables, final consensus)") +
   theme(plot.title = element_text(face="bold",size = "17"),
     plot.subtitle = element_text(size = "12"),
     plot.caption = element_text(size="12"),
     axis.title.x = element_text(size ="15"),
     axis.title.y = element_text(size="15"),
-    axis.text.x = element_text(size="12",vjust=1.),
-    axis.text.y = element_text(size="12"),
+    axis.text.x = element_text(angle=20, hjust=1, size="12",vjust=1., face="bold"),
+    axis.text.y = element_text(angle=20, hjust=1, size="12", face="bold"),
     legend.position = "none",
+    panel.grid.major.x = element_line(colour = "grey50"),
+    panel.grid.major.y = element_line(colour = "grey"),
     panel.border = element_rect(colour = "white"),
-    panel.background = element_rect(fill = "lightgray"))
+    panel.background = element_rect(fill = "NA"))#"lightgray"
 
 ```
+\begin{footnotesize}Gráfico 8: $R^2$ de cada fator do experimento para cada comparação separadamente e para um quadro de consenso geral.\end{footnotesize}
 
+### Regressão Linear e Intervalos de Confiança
 
+Para finalizarmos nossas análises por Regressão Linear e Intervalos de Confiança, vamos testar um modelo envolvendo as duas técnicas e todos os fatores ao mesmo tempo. Regressão linear definindo uma equação que descreve o comportamento dos dados e intervalos de confiança para cada coeficiente desta equação. Cada coeficiente, com seu respectivo intervalo de confiança, é considerado válido à pelo menos 95% de significância ($p\geq 0.05$). 
 
+O gráfico 9 apresenta um quadro que coloca lado a lado cada um dos valores descritos acima. Na coluna **Termo**, temos a variável proposta. Perceba que as variáveis categóricas (distância e quantificador) foram distribuídas em várias variáveis boleanas (cada uma pertencente ao domínio {0,1}), tomando sempre 1 como sendo um valor específico (uma distância, por exemplo) e zero como sendo os demais valores. A coluna **Coeficiente** descreve o grau de influência linear daquele fator para a variável **consenso**. **Limite inf.** e **Limite sup.** representam os limites inferior e superior do intervalo de confiança de **Coeficiente**, respectivamente. Observando a coluna **P-valor**, vemos que nem todos os intervalos contam com mais de 95% de confiança.
+
+Os intervalos de confiança das variáveis level e alternatives (dos dados, vide tabela 4), incluem zero. Porém, levando em consideração seus P-valor elevados(0.86 e 0.31 respectivamente), não podemos tirar conclusões sobre os resultados. Já a variável experts, cujo intervalo de confiança também inclui zero, conta com um P-valor<<0.05 (significância muito maior que 95%) e, por isso, podemos concluir que esta variável não exerce influência significativa na variável consenso.
+
+Como era de se esperar, com base na análise anterior, os quantificadores exercem influência significativa no consenso. Já as distâncias tem comportamentos variados. Todas exercem alguma influência significativa junto ao consenso, porém para Dice esta influênca é negativa. Como já javiamos constatado , a distância de Euclides e de Manhattan tem extamente a mesma influência para o consenso. Jaccard tem uma influência muito similar às distâncias de Manhattan e de Euclides (coerente cvom resultado anterior). Como os intervalos de confiança de Manhattan, Euclides e Jaccard de interceptam, não podemos concluir se estas são de fato diferentes com base neste modelo.
 
 ```{r echo=FALSE}
 
@@ -676,87 +1108,37 @@ modelo = lm(`final consensus` ~ distance + quantifier + level + alternatives + e
 t_ic <- tidy(modelo, conf.int = TRUE, conf.level = 0.95)
 
 colnames(t_ic) <- c('Termo','Coeficiente','std.error','statistic','P-valor','Limite inf.','Limite sup.')
+t_ic <- t_ic %>% mutate(Coeficiente = round(Coeficiente,4),`Limite inf.`=round(`Limite inf.`,4),`Limite sup.`=round(`Limite sup.`,4))
 rownames(t_ic) <- c('',' ','  ','   ','    ','     ','      ','       ','        ' ,'         ')
 
 r2 <- glance(modelo)
 
 colnames(r2) <- c('R quadrado','R quad. ajust.','sigma','statistic','P-valor','df','loglik','AIC','BIC','deviance','df.residual')
+#r2 <- r2 %>% mutate(`R quadrado`=round(`R quadrado`,6),`R quad. ajust.`=round(`R quad. ajust.`,6))
 rownames(r2) <- c('')
 
 ```
-
-
-```{r}
-
-grid.arrange(
-  tableGrob(r2[1:1, c(1,2,5)]),
-  tableGrob(t_ic[2:10, c(1,2,5,6,7)]),
-  nrow=2,heights=c(1,3))
-
-
-```
-
-A tabela apresenta os três valores referentes as três formas de calcular a correlação entre as variáveis. Perceba que todos apresentam uma correlação superior a 0.9, o que indica uma forte correlação. Esta evidência responde nossa atual dúvida. De fato, como os gráficos mostraram, a maior parte do desenvolvimento ocorre na primeira metade do projeto.
-
-# Conclusão
-
-Podemos concluir com base nos gráficos e resultados matemáticos, que nenhum projeto teve seu código refatorado a ponto de encolher da metade do tempo de vida do projeto até o fim e que a maior parte do desenvolvimento ocorre, em média, na primeira metade do tempo de vida do projeto.
-
-
 ```{r echo=FALSE}
 
-consensus %>% 
-  mutate(consensus=`final consensus`-`initial consensus`) %>%
-  ggplot(aes(y= consensus, x=distance  , color = quantifier)) + 
-  geom_jitter(alpha = .2, width = .2) + 
-  geom_boxplot(outlier.alpha = .0) +
-  labs(x='Modelo de distância',  
-    y='Consenso', 
-    title="Índices de consenso medidos por métrica de distância", 
-    subtitle="(distance, final consensus)", 
-    caption="GDMR",
-    color="quantificador") +
-  theme(plot.title = element_text(face="bold",size = "17"),
-    plot.subtitle = element_text(size = "12"),
-    plot.caption = element_text(size="12"),
-    axis.title.x = element_text(size ="15"),
-    axis.title.y = element_text(size="15"),
-    axis.text.x = element_text(size="12"),
-    axis.text.y = element_text(size="12"),
-    panel.border=element_blank())
+#grid.arrange(
+#  tableGrob(r2[1:1, c(1,2,5)]),
+#  tableGrob(t_ic[2:10, c(1,2,5,6,7)]),
+#  nrow=2,heights=c(1,3))
+grid.arrange(
+  tableGrob(t_ic[2:10, c(1,2,5,6,7)]),
+  nrow=1,heights=c(1))
+
 
 ```
+\begin{footnotesize}Gráfico 9: Quadro de coeficientes lineares para cada fator em um modelo conjunto envolvendo todas as variáveis e as duas técnicas de análise utilizadas.\end{footnotesize}
 
-Como ameaça à validade desta conclusão, podemos mencionar que a variável **sloc\_end** não representa, de fato, o fim da vida do projeto, mas o fim da medição. Alguns projetos podem ter entrado em produção (quando passar a sofrer muito menos alterações) antes mesmo do momento em que **sloc\_med** foi registrado, outros não terem atingido a maturidade mesmo ao final do tempo total.
-\newpage
-\begin{multicols}{1}
-\begin{center}
-\begin{tabular}{c}
-\bf {\Large Anexos}
-\end{tabular}
-\end{center}
-\end{multicols}
 
-\begin{multicols}{1}
-\begin{tabular}{|l|p{9cm}|l|}\hline
-Nome & Descrição & Tipo \\ \hline \hline
-\bf gh\_project\_name & nome do projeto & Categórica \\ \hline
-\bf team & total de desenvolvedores que participaram do projeto até sua última medição & Numérica \\ \hline
-\bf lang & linguagem de programação predominante & Categórica \\ \hline
-\bf sloc\_end & total de linhas de código na última medição do projeto & Numérica \\ \hline
-\bf sloc\_med & total de linhas de código no meio do tempo de atividade estimado do projeto & Numérica \\ \hline
-\bf activity\_period & tempo de atividade estimado do projeto & Numérica \\ \hline
-\bf num\_commits & total de submissões de alteração durante todo o tempo de atividade do projeto & Numérica \\ \hline
-\bf commits\_per\_month & total de submissões por mês & Numérica \\ \hline
-\bf tests\_per\_kloc & casos de teste por total de linhas de código & Numérica \\ \hline
-\bf total\_builds & total de integrações & Numérica \\ \hline
-\bf build\_success\_prop & proporção de integrações bem-sucedidas & Numérica \\ \hline
-\bf builds\_per\_month & total médio de integrações por mês & Numérica \\ \hline
-\bf tests\_added\_per\_build & total médio de testes adicionados por integração & Numérica \\ \hline
-\bf tests\_successful & total de testes bem-sucedidos & Numérica \\ \hline
-\bf test\_density & densidade de testes & Numérica \\ \hline
-\bf test\_size\_avg & tamanho médio dos casos de testes & Numérica \\ \hline
-\end{tabular}
+# Considerações finais
 
-\end{multicols}
+Sumarizando, verificamos que as distâncias de Manhattan e de Euclides são as mais promissores em termos de magnitude de consenso e são equivalentes à 95% ou mais de confiança. A distância de Jaccard é apenas ligeiramente inferior as duas primeiras. Dice é o modelo de distância menos recomendável para consenso e a distância Cosseno é o meio termo. Além disto, o modelo de Regressão Linear nos mostrou que a escolha dos quantificadores é uma decisão projetual muito mais crítica para sistemas de suporte ao consenso que a escolha da métrica de distância.
+
+Para além deste experimento, poderia propor incluir as variáveis coerência e completude, porpostos na nossa reprodução mas não aplicados. A verificação de coerência exigiria verificações e correções que, eventualmente, poderiam fazer o consenso retroceder. Uma completude inferior a 1.0 levaria o processo a lidar com incerteza. Um novo experimento para avaliar como estes modelos de distância se comportariam nestes casos poderia chegar a resultados diferentes.
+
+
+# Referências
 

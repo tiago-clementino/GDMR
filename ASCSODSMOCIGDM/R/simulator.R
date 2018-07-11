@@ -1,4 +1,4 @@
-library(GDMR)
+#library(GDMR)
 library(here)
 
 simulator=function(pref,m,n,distance='euclidean',quantifier='leasthalf',level=3,threeshold=.8,max_iterations=8){#,consistent=TRUE){
@@ -52,6 +52,9 @@ simulator=function(pref,m,n,distance='euclidean',quantifier='leasthalf',level=3,
   return (data.frame(initial_consensus,consesus_global,count,distance,quantifier,m,n,level));
 
 }
+erro=function(e) {
+  print(e);
+}
 
 generate_sample=function(){
 
@@ -59,19 +62,21 @@ generate_sample=function(){
   N=c(4,6,8);
   consensus<-data.frame();
 
+
   count = 0;
 
   for (m in M) {
     for (n in N) {
 
-      pref=matrix(0,m,n*n-n);
-      for (i in 1:m) {
-        pref[i,]=generatePref(n,TRUE);
-      }
-      count = count + 1;
-
       for (level in 1:3){
-        for (i in 1:3) {
+        count=0;
+        for (i in 1:12) {
+
+          pref=matrix(0,m,n*n-n);
+          for (i in 1:m) {
+            pref[i,]=generatePref(n,TRUE);
+          }
+          count = count + 1;
 
           tryCatch({
             consensus <- rbind(consensus,cbind(simulator(pref,m,n,distance='manhattan',quantifier='asmany',level),count));
@@ -97,15 +102,24 @@ generate_sample=function(){
           });
 
           tryCatch({
-            consensus <- rbind(consensus,cbind(simulator(pref,m,n,distance='cosine',quantifier='asmany',level),count));
+            #consenso_cosine=simulator(pref,m,n,distance='cosine',quantifier='asmany',level);
+            consenso_cosine=NULL;
+            while(is.null(consenso_cosine)){
+              consenso_cosine=simulator(pref,m,n,distance='cosine',quantifier='asmany',level);
+            }
+            consensus <- rbind(consensus,cbind(consenso_cosine,count));
 
           }, warning = function(w) {
             #print('Estoy en 1')
-          }, error = function(e) {
-            #print('Estoy en 2')
-          }, finally = {
+          }, error = erro
+          , finally = {
             #print('Estoy en 3')
           });
+
+          if(is.null(consenso_cosine)){
+            print('Estoy en X');
+            consenso_cosine=simulator(pref,m,n,distance='cosine',quantifier='asmany',level);
+          }
 
           tryCatch({
             consensus <- rbind(consensus,cbind(simulator(pref,m,n,distance='dice',quantifier='asmany',level),count));
@@ -247,7 +261,7 @@ generate_sample=function(){
     }
   }
 
-  out_file = here("./ASCSODSMOCIGDM/data/data2.csv")
+  out_file = here::here("./ASCSODSMOCIGDM/data/data.csv")
 
   message("Salvando em ", out_file)
 
