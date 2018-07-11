@@ -17,7 +17,7 @@
 feedback=function(agregated,preferencesDF,pref,M,N,delta,threshold,quantifier)
 {
 
-  EXPCH=list(matrix(0,1,M),data.frame(matrix(0,N,M)),data.frame(matrix(0,M,N*N-N)));
+  EXPCH=list(matrix(0,1,M),data.frame(matrix(0,M,N)),data.frame(matrix(0,M,N*N-N)));
   APS=matrix(0,M,N+1);
 
   for (i in 1:M) {
