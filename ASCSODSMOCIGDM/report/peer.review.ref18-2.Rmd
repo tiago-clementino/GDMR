@@ -29,6 +29,7 @@ header-includes:
   - \usepackage{graphics,graphicx,epsfig}
   - \usepackage{rotating,subfig}
   - \usepackage{caption}
+  - \renewcommand{\abstractname}{Resumo}
 ---
 \fontsize{11}{18}
 \fontseries{b}
@@ -63,7 +64,7 @@ Soft Consensus pode ser aplicado representando o consenso por quantificadores Fu
 
 Aqui foi feito a reprodução de um estudo comparativo originalmente reportado em [@chiclana2013statistical]. Os autores do estudo original fizeram uma comparação estatística entre os cinco principais modelos de medição de distância utilizadas no suporte ao consenso. Testes estatísticos pareados utilizando o método não-paramétrico de Wilcoxon foram reportados. Os resultados visavam responder se a aplicação de um ou outro modelo de distância exercia alguma influência no resultado do processo até o consenso. Dentre os fatores do experimento estão o quantificador Fuzzy aplicado, o nível de consenso aplicado, o total de indivíduos, o total de alternativas e o modelo de distância (variável de controle). O experimento original será descrito em detalhes na seção 3.
 
-Para esta reprodução, procurei seguir detalhadamente todos os passos do estudo original, porém aplicando o meu próprio modelo operacional (disponível em [github.com/tiago-clementino/GDMR/tree/ref18](https://github.com/tiago-clementino/GDMR/tree/ref18), junto com os scripts da análise, um guia de reprodução e até o texto deste relatório) e métodos estatísticos diferentes. A análise procedeu com base em duas abordagens. Uma utilizando intervalos de confiança com *bootstrap* (por observar a distribuição gaussiana nos dados) para reproduzir exatamente o mesmo quadro do artigo original (que utilizou o teste de Wilcoxon) e outra utilizou regressão linear para criar um modelo de correlação entre todos os fatores. Os detalhes desta reprodução estão descritos na seção 4, o experimento original na seção 3 e a seção 6 traz comparações entre as conclusões do experimento original e deste.
+Para esta reprodução, procurei seguir detalhadamente todos os passos do estudo original, porém aplicando o meu próprio modelo operacional (disponível em [github.com/tiago-clementino/GDMR/tree/ref18](https://github.com/tiago-clementino/GDMR/tree/ref18), junto com os scripts da análise, um guia de reprodução e até o texto deste relatório) e métodos estatísticos diferentes. A análise procedeu com base em duas abordagens. Uma utilizando intervalos de confiança com *bootstrap* (por observar a distribuição gaussiana nos dados) para reproduzir exatamente o mesmo quadro do artigo original (que utilizou o teste de Wilcoxon) e outra utilizou regressão linear para criar um modelo de correlação entre todos os fatores. Os detalhes desta reprodução estão descritos na seção 4, o experimento original na seção 3 e a seção 6 traz uma sumarização e algumas considerações finais.
 ```{r read, include=FALSE}
 consensus = read_csv(here::here("./ASCSODSMOCIGDM/data/data.csv"))
 ```
