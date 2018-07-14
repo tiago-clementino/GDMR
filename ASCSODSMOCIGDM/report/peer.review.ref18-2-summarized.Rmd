@@ -64,7 +64,7 @@ Soft Consensus pode ser aplicado representando o consenso por quantificadores Fu
 
 Aqui foi feito a reprodução de um estudo comparativo originalmente reportado em [@chiclana2013statistical]. Os autores do estudo original fizeram uma comparação estatística entre os cinco principais modelos de medição de distância utilizadas no suporte ao consenso. Testes estatísticos pareados utilizando o método não-paramétrico de Wilcoxon foram reportados. Os resultados visavam responder se a aplicação de um ou outro modelo de distância exercia alguma influência no resultado do processo até o consenso. Dentre os fatores do experimento estão o quantificador Fuzzy aplicado, o nível de consenso aplicado, o total de indivíduos, o total de alternativas e o modelo de distância (variável de controle). O experimento original será descrito em detalhes na seção 3.
 
-Para esta reprodução, procurei seguir detalhadamente todos os passos do estudo original, porém aplicando o meu próprio modelo operacional  (disponível em [github.com/tiago-clementino/GDMR/tree/ref18](https://github.com/tiago-clementino/GDMR/tree/ref18)\footnote[1]{Neste repositório você encontrará também com os scripts da análise, um guia de reprodução e até o texto deste relatório completo, além de uma versão resumida ("peer.review.ref18-2-summarized.pdf")}) e métodos estatísticos diferentes. A análise procedeu com base em duas abordagens. Uma utilizando intervalos de confiança com *bootstrap* (por observar a distribuição gaussiana nos dados) para reproduzir exatamente o mesmo quadro do artigo original (que utilizou o teste de Wilcoxon) e outra utilizou regressão linear para criar um modelo de correlação entre todos os fatores. Os detalhes desta reprodução estão descritos na seção 4, o experimento original na seção 3 e a seção 6 traz uma sumarização e algumas considerações finais.
+Para esta reprodução, procurei seguir detalhadamente todos os passos do estudo original, porém aplicando o meu próprio modelo operacional  (disponível em [github.com/tiago-clementino/GDMR/tree/ref18](https://github.com/tiago-clementino/GDMR/tree/ref18)\footnote[1]{Neste repositório você encontrará também com os scripts da análise, um guia de reprodução e até o texto deste relatório completo}) e métodos estatísticos diferentes. A análise procedeu com base em duas abordagens. Uma utilizando intervalos de confiança com *bootstrap* (por observar a distribuição gaussiana nos dados) para reproduzir exatamente o mesmo quadro do artigo original (que utilizou o teste de Wilcoxon) e outra utilizou regressão linear para criar um modelo de correlação entre todos os fatores. Os detalhes desta reprodução estão descritos na seção 3, na seção 4 estão os resultados comparados e a seção 5 traz uma sumarização e algumas considerações finais.
 ```{r read, include=FALSE}
 consensus = read_csv(here::here("./ASCSODSMOCIGDM/data/data.csv"))
 ```
@@ -87,127 +87,15 @@ GMD é o processo que visa atingir um julgamento comum a um conjunto de múltipl
 
 Para cada participante $e_i\in E$, construa a função ${{\mu}_p}_i X\times X\implies D$, onde D é o domínio de representação da informação (em $[0,1]$) e ${{\mu}_p}_i (x_l,x_k )=(p_{lk})^i (l,k\in\{1,2,...,n\})$ denota o grau de preferência da alternativa $x_l$ frente à $x_k$ em $D$ e $p_{ij}+p_{ji}=1,\forall i,j\in\{1,…,n\}$. Assim, as preferências dos participantes para todas as alternativas em $X$ podem ser descritas como uma matriz $P^i=(p_{lk}^i )_{(n\times n)}$[@kacprzyk1986group].
 
-O uso de um modelo fixo de opinião baseado em preferências sobre alternativas é prática comum na literatura [@tanino1984fuzzy; @herrera2002consensus; @orlovsky1978decision]. Diferentes métodos de avaliação de preferências são comparados em [@millet1997effectiveness], onde conclui-se que estratégias pareadas de comparação são mais eficientes que não pareadas. Dentre os modelos de representação das preferências dos participantes, aqueles baseados em relações de preferência Fuzzy [@chiclana1998integrating; @chiclana2002note; @kacprzyk1986group; @kahraman2003fuzzy; @orlovsky1978decision; @switalski2003general] são os mais usuais no suporte ao consenso. Isto se dá em função do processo de agregação de preferências, convenientemente facilitado por quantificadores Fuzzy capazes de expressar imprecisão.
 
 ## CRP (*Consensus Reaching Process*)
 
-Um processo de decisão em grupo pode ser resolvido apenas levantando e agregando opiniões dos participantes e, em seguida, selecionando diretamente a solução mais bem sucedida. Porém, a aprovação e consequente aplicação desta solução não pode estar assegurada pois não houve um consenso entre os especialistas [@butler2007conflict]. O  consenso nada mais é do que a resultado da discussão em si, fruto de um processo recorrente e interativo onde um grau de consenso é checado a cada “rodada”.
-
-Consenso pode ser definido como “um entendimento mútuo produzido com o consentimento de todos os membros em um grupo ou entre vários grupos” [@saint1994rules]. Em um primeiro momento, a ideia de consenso pode nos remeter ao conceito de unanimidade, e nos primeiros trabalhos de pesquisa na área era este o objetivo [@bezdek1978fuzzy; @spillman1980fuzzy]. Atualmente há um entendimento geral de que um conceito mais flexível de consenso (*Soft Consensus*) representa melhor a realidade das discussões humanas [@martinez2007challenges]. A lógica difusa (*Fuzzy Logic*) é um caminho recorrente neste sentido [@kacprzyk1986group].
+O  consenso nada mais é do que a resultado da discussão em si, fruto de um processo recorrente e interativo onde um grau de consenso é checado a cada “rodada”.
 
 A cada rodada, o processo de suporte ao consenso calcula dois parâmetros [@cabrerizo2010managing; @herrera1996model; @herrera1997linguistic]: (i) o grau de consenso, que vai definir o quão próximo estamos de um limiar estipulado como aceitável (ii) uma medida de proximidade entre as preferências dos participantes, o que dará suporte ao processo rumo ao consenso. Estas medidas são utilizadas para mensurar o estágio do consenso em três diferentes níveis de relações de preferência Fuzzy: preferências entre pares de alternativas (*pairs of alternatives* no artigo original), preferências envolvendo todas as relações ligadas a uma alternativa específica (*alternatives level* no artigo original) e uma medida geral (*relation level* no artigo original). Isto nos permite identificar quais indivíduos estão mais próximos da solução consensual, ou a respeito de quais alternativas o consenso será mais difícil.
 
 O cálculo do índice de consenso envolve, necessariamente, alguma métrica de similaridade. Uma função de similaridade deve ser utilizada para mensurar ambos, o índice de consenso e uma matriz de proximidade. Proximidade é calculada mensurando a similaridade entre as preferências (pares de alternativas), para cada participante r, e uma agregação geral em uma matriz de similaridade de acordo com $SM^r=({sm_{ij}}^r)$, onde $${sm_{ij}}^r=s({p_{ij}}^r,p_{ij} )$$
 Sendo ${p_{ij}}^r$ a medida da preferência do participante $r$ entre as alternativas $i,j\in X$, e  $p_{ij}=\phi({p_{ij}}^1,...,{p_{ij}}^{(r-1)},{p_{ij}}^{(r+1)},…,{p_{ij}}^m)$, onde $\phi$ é uma função que descreve a maioria segundo um quantificador Fuzzy (no experimento foi usado “*most*”, “*leathalf*” e “*asmany*”), e $s:[0,1]^{(m-1)}\times [0,1]^{(m-1)}\implies[0,1]$ é a função de similaridade. Esta matriz de similaridade é útil tanto no cálculo do consenso, quanto em prover o feedback necessário para que cada participante possa modificar sua opinião corretamente rumo ao consenso.
-
-O consenso é calculado fundindo cada preferência entre pares de alternativas para cada participante r. Isto é feito segundo três níveis já mensionados.
-
-\begin{itemize}
-\item Nível 1: Consenso entre pares de alternativas, $cp_{ij}$, é um valor obtido pela agregação (utilizando os quantificadores Fuzzy) de todas as preferências dos participantes para cada par de alternativas $$\forall i,j=1,...,n\wedge i\neq j:cp_{ij}=\phi({sm_{ij}}^1,...,{sm_{ij}}^m)$$
-\item Nível 2: Consenso pela agregação de todas as relações ligadas a uma alternativa específica $$ca_i=\phi(cp_{ij},cp_{ji}:j=1,...,n\wedge j\neq i)$$
-\item Nível 3: Consenso por uma medida global envolvendo todos os participantes e alternativas $$cr=\phi(ca_i:i=1,...,n)$$
-\end{itemize}
-
-Atualmente, pelo menos 90 diferentes famílias de operadores de agregação têm sido estudadas [@chiclana2004induced; @chiclana2007some; @dubois1985review; @fodorfuzzy; @herrera2003study; @klir1988fuzzy; @xu2003overview; @yager1988ordered; @zhou2008type; @zhou2011alpha]. Dentre elas, o operador OWA (do inglês *Ordered Weighted Averaging*) porposto por Yager [@yager1988ordered] é o mais usado. A operação de agregação em função de um operador quantificador, $\phi$ é definida assim: $$p_{ij}^c=\phi(p_{ij}^1,...,p_{ij}^m)=\sum_{k=1}^{m}w_k\cdot p_{ij}^{\sigma(k)}$$, onde $\phi$ é uma função de permutação tal que $p_{ij}^{\sigma(k)}>p_{ij}^{\sigma(k+1)}, \forall k=1,...,m-1$ e $w_k\in W=(w_1,...,w_n)$ é um vetor ponderado obtido a partir dos quantificadores de maioria Fuzzy descritos anteriormente.
-
-
-# Experimento original
-
-## Descrição do problema
-
-Dado um problema de decisão, a função de similaridade aplicada entre as preferências dos participantes tem um importante papel na convergência rumo ao consenso. Isto serviu de motivação para um estudo comparativo que visa responder se o uso de diferentes funções de similaridade pode ou não afetar o processo de consenso. Além do mais, se for o caso, produzir recomendações aos participantes que os guiem a ajustar ou manter suas opiniões rumo ao consenso em função de uma similaridade concentrica pode tornar a decisão a respeito de qual métrica usar ainda mais significativa.
-
-### Problema de negócio
-
-Atingir o consenso não é uma tarefa trivial, sobretudo quando lidamos com um número significativo de participantes ou um problema complexo (muitas alternativas). Identificar uma forma eficaz de mensurar o consenso ou mesmo produzir recomendações úteis pode ser muito difícil. Tomar as decisões corretas no projeto de um sistema de suporte ao consenso é decisivo para esta questão e isto passa por escolher a função de similaridade adequada.
-
-### Problema técnico
-
-Comparar as cinco funções de similaridade mais frequentemente aplicadas a sistemas de suporte ao consenso baseados em quantificadores Fuzzy. Dados dois vetores de números reais $a=(a_1,a_2,...,a_u)$ e $b=(b_1,b_2,...,b_v)$, as cinco funções de similaridade testadas são as seguintes [@cha2007comprehensive; @chen1995comparison; @deza2009encyclopedia; @wang1995comparative]: \begin{footnotesize}$$Manhatan: d_1(a,b)=\sum_{i=1}^{n}|a_i-b_i|$$$$Euclidean: d_2(a,b)=\sqrt{\sum_{i=1}^{n}{|a_i-b_i|}^2}$$$$Cosine: d_2(a,b)=\frac{{\sum_{i=1}^{n}a_i\cdot b_i}}{\sqrt{\sum_{i=1}^{n}a_i^2}\cdot\sqrt{\sum_{i=1}^{n}b_i^2}}$$$$Dice: d_4(a,b)=\frac{2\cdot\sum_{i=1}^{n}a_i\cdot b_i}{\sum_{i=1}^{n}a_i^2+\sum_{i=1}^{n}b_i^2}$$$$Jaccard: d_5(a,b)=\frac{\sum_{i=1}^{n}a_i\cdot b_i}{\sum_{i=1}^{n}a_i^2+\sum_{i=1}^{n}b_i^2-\sum_{i=1}^{n}a_i^2\cdot\sum_{i=1}^{n}b_i^2}$$ \end{footnotesize}
-
-## Objetivos da Investigação
-
-A pesquisa realizada no artigo em questão é do tipo experimental, e teve como objetivo comparar o comportamento das cinco principais funções de similaridade aplicadas a problemas de consenso. Foi realizada uma simulação de consenso a partir de dados aleatórios aplicando tais funções e seus resultados analisados sob a métrica do grau de consenso final.
-
-Formalmente, o objetivo desta comparação pode ser definido no formato **GQM** **como analisar** as funções de distância aplicadas ao suporte ao consenso **com a intenção de** compará-las **a respeito de** seus graus de consenso finais **do ponto de vista** dos projetistas de sistemas de suporte ao consenso **no contexto** dos resultantes de simulações envolvendo multiplos fatores.
-
-## Execução do experimento
-
-### Questões de pesquisa
-
-"*The application of the Manhattan, Euclidean, Cosine, Dice and Jaccard distance functions in GDM problems do not produce significant differences in the measurement of consensus*" [@chiclana2013statistical], traduzindo: "A aplicação das funções de distância de Manhatan, Euclidiana, Cosseno, Dice e Jaccard em problemas GDM não produzem diferenças significativas ao mensurar consenso."
-
-### Fatores e variáveis de resposta
-
-As variáveis independentes (e também fatores) utilizados no experimento são:
-
-\begin{itemize}
-\item Função de distância utilizada: Uma dentre cinco funções tomadas como predominantes na literatura (variável de controle).
-\item Total de participantes: Número de participantes utilizados no processo de consenso (simulação) $E_m:m=\{4,6,8,10,12\}$.
-\item Total de alternativas viáveis: Número de alternativas de solução viáveis $X_n:n=\{4,6,8\}$.
-\item Quantificadores Fuzzy: Além das funções de distância, quantificadores de maioria Fuzzy podem ter influência no resultado. Aqui foram usados "most", "asmany" e "leasthalf".
-\item Níveis de consenso: São relações de preferência entre alternativas associadas a maioras Fuzzy. São eles: (1) nível de pares de alternativas (compara cada alternativa entre si), (2) nível de alternativas (compara cada alternativa com as demais) e (3) nível da relação (comparação geral)
-\end{itemize}
-
-As variáveis de resposta são:
-
-\begin{itemize}
-\item Grau de consenso: Saldo final do processo de consenso que descreve o qual de acordo os participantes estão com o resulta: $cr\in[0,1]$
-\end{itemize}
-
-### Níveis das variáveis
-
-Os níveis dos fatores de da variável de resposta (Índice de consenso) estão definidos de acordo com a tabela 1.
-
-\begin{tabular}{|p{3.5cm}|p{3.5cm}|}\hline
-Variável & Níveis \\ \hline \hline
-\bf Função de distância & \{Manhatan, Euclidean, Cosine, Dice, Jaccard\} \\ \hline
-\bf Participantes & \{4, 6, 8, 10, 12\} \\ \hline
-\bf Alternativas & \{4, 6, 8\} \\ \hline
-\bf Quantificadores & \{most, leasthalf, asmany\} \\ \hline
-\bf Níveis & {1, 2, 3} \\ \hline
-\bf Índice de consenso & [0,1] \\ \hline
-\end{tabular}
-\begin{footnotesize} Tabela 1: Níveis das variáveis utilizadas no experimento\end{footnotesize}
-
-### Hipótese nula
-
-A hipótese nula afirma que a utilização de duas funções de distância diferentes não produz diferenças significativas no grau final de consenso.
-
-### Unidade experimentais
-
-As unidades experimentais são os resultados da comparação entre cada duas funções de distância distintas dadas cada combinação diferente dos fatores.
-
-### Design do experimento
-
-Trata-se de uma pesquisa experimental. Aqui os dados são produzidos pelo pesquisador com base na repetição de experimentos onde fatores são ajustados e variáveis resposta são observadas. Tipicamente há um ou poucos fatores importantes a ajustar a cada repetição (aqui temos a função de distância e os outros quatro fatores).
-
-Para testar a hipótese nula, doze (12) conjuntos de relações de preferência (pares de alternativas) foram gerados aleatoriamente para cada combinação possível de participantes ($E_m:m\in M=\{4,6,8,10,12\}$) e alternativas ($X_n:n\in N=\{4,6,8\}$). As diferentes funções de distância foram aplicadas, por sua véz, para mensurar consenso nos três níveis possíveis (pares de alternativas, alternativas e relação geral), usando os três diferentes operadores quantificadores guiados OWA (Fuzzy) [@yager1988ordered]. Todas as funções de distância foram testadas aos pares, $d_i\times d_j:i=\{1,2,3,4\},j=\{1,2,3,4,5\}$ ($\frac{5*5-5}{2}=10$ testes), e assim, foram realizadas um total de $12*|M|*|N|*3*3*5=8100$ simulações e $|M|*|N|*3*3*10=1350$ análises.
-
-### Execução
-
-A execução do experimento envolve apenas dois passos:
-
-1. Execução de simulações de consenso. Uma para cada combinação de fatores.
-2. Análise estatística dos resultados.
-
-#### Simulação
-
-O autor original apenas descreve a simulação, sem apresentar um modelo operacional ou mesmo sua validação.
-
-#### Análise dos resultados
-
-Para cada par de funções de distância em comparação são analisadas duas amostras relacionadas. O usual teste paramétrico utilizado nestes casos é o teste t (segundo autor original). Contudo, este teste exige para sua aplicação que assumamos uma distribuição normal e independente dos dados na população do qual a amostra aleatória é retirada. O autor considerou que assumir isto é pouco realista, além de entender que evitando tais premissas poderia tornar seus resultados mais generalistas. Assim, adotou um teste não-paramétrico como sendo o mais adequado [@lehmann1975nonparametrics; @siegal1956nonparametric; @wilcoxon1945individual]
-
-Para dados contínuos e duas amostras relacionadas (pares e alternativas), o autor entendeu como adequado o teste não-paramétrico de *ranking* de Wilcoxon [@lehmann1975nonparametrics; @rohatgiintroduction; @siegal1956nonparametric; @wilcoxon1945individual]. O teste de Wilcoxon leva em consideração informações a respeito do sinal da diferença entre os valores comparados, além da magnitude destes, para ranqueá-los apropriadamente. O *ranking* é a peça chave para qualificação da significância das diferenças entre os resultados neste método.
-
-#### Instrumentação
-
-Não houveram especificações ligadas a operação de instrumentos.
-
-### Ameaças à validade
-
-O autor não menciona ameaças a validade.
 
 
 # Reprodução do Experimento
@@ -216,7 +104,7 @@ Muitos dos elementos descritivos foram omitidos aqui na reprodução por serem i
 
 ## Objetivos
 
-Aqui o objetivo consiste apenas em validar ou questionar os resultados originais.
+Formalmente, o objetivo desta comparação pode ser definido no formato **GQM** **como analisar** as funções de distância aplicadas ao suporte ao consenso **com a intenção de** compará-las **a respeito de** seus graus de consenso finais **do ponto de vista** dos projetistas de sistemas de suporte ao consenso **no contexto** dos resultantes de simulações envolvendo multiplos fatores.
 
 ### Design do experimento
 
@@ -253,6 +141,10 @@ consensus %>%
 Todas as funções de distância foram analisadas aos pares, $d_i\times d_j:i=\{1,2,3,4\},j=\{1,2,3,4,5\}$ ($\frac{5*5-5}{2}=10$ testes). Assim, foram realizadas um total de $|M|*|N|*3*3*10=1350$ análises.
 
 ## Execução da reprodução
+
+### Questões de pesquisa
+
+"*The application of the Manhattan, Euclidean, Cosine, Dice and Jaccard distance functions in GDM problems do not produce significant differences in the measurement of consensus*" [@chiclana2013statistical], traduzindo: "A aplicação das funções de distância de Manhatan, Euclidiana, Cosseno, Dice e Jaccard em problemas GDM não produzem diferenças significativas ao mensurar consenso."
 
 ### Fatores e variáveis de resposta
 
@@ -299,6 +191,10 @@ Variável & Níveis \\ \hline \hline
 \bf Diferença entre consenso inicial e final & [0,1] \\ \hline
 \end{tabular}
 \begin{footnotesize} Tabela 3: Níveis das variáveis de resposta utilizadas (ou apenas propostas) na reprodução\end{footnotesize}
+
+### Unidade experimentais
+
+As unidades experimentais são os resultados da comparação entre cada duas funções de distância distintas dadas cada combinação diferente dos fatores.
 
 ### Execução
 
@@ -562,17 +458,8 @@ grid.arrange(arrangeGrob(p1b,p2b,p3b,p4b,ncol=2,widths=c(1,1)),
 
 O autor utilizou o teste não-paramétrico de Wilcoxon, porém, como já mencionado, pretendo utilizar Intervalos de Confiança [@gardner1986confidence] com *Bootstrap* e Regressão Linear [@neter1989applied]. Intervalos de confiança para reproduzir o mesmo cenário do experimento original (substituindo o teste de Wilcoxon) e por ter a comprovação gráfica de que os dados seguem a distribuição normal. Regressão linear para obter uma informação definitiva do quanto a variação da função de distância descreve o comportamento dos dados, sem ignorar os demais fatores.
 
-#### Instrumentação
-
-Como já mencionado, utilizei a plataforma [R](https://www.r-project.org/) e a IDE [RStudio](https://www.rstudio.com/) para criar meu modelo operacional. O código fonte utilizou como base um software livre de apoio ao consenso chamado [GDMR](https://github.com/rakelup/GDMR) (*Group Decision Making R*) [@urena2016gdm].
 
 ### Ameaças à validade
-
-#### Internas
-
-Como ameaça a validade interna, posso apontar defeitos no código do modelo operacional ou do simulador. Para evitar tais ameaças, foram realizados testes no código do modelo (não apliquei uma metodologia de testes mais rigoroza em função das restrições de prazo da disciplina) e seu sistema base (GDMR) já contava com seus próprios testes (reportados pelo autor, mas não disponibilizados publicamente). A validação do modelo operacional também evita ameaças internas.
-
-#### De constructo
 
 Não levar em consideração o índice de consenso inicial (aleatório) pode ser uma importante ameaça ao constructo. Como é possível observar no gráfico 5 abaixo, para o quantificador "*leasthalf*", o consenso inicial e final são sempre iguais. Isto implica em uma função de distância demasiadamente otimista, mas que parece eficiente nos resultados. Esta ameaça só poderia, de fato, ser eliminada se mudássemos a variável de resposta do experimento de grau de consenso final para a diferença entre grau inicial e final de consenso.
 
@@ -602,10 +489,6 @@ consensus %>%
 \begin{footnotesize}Gráfico 5: Gráfico de dispersão que nos dá uma visão geral do ganho no grau de consenso após o processo, tomando a diferença entre consenso inicial e final em função da distância.\end{footnotesize}
 
 Além da ameaça acima, o autor original (e este autor também, em função do prazo) negligenciou a informação "número de iterações necessárias ao consenso", o que pode comprometer o resultado. Poucas iterações pode ser sinal de eficiência ou outro indício de excesso de otimismo. Diferenciar estas duas indicações poderia ser feita, novamente, tomando o consenso inicial como medida de otimismo (solucionando duas ameaças ao mesmo tempo).
-
-#### Externas
-
-Ameaças externas só poderiam vir das plataformas de desenvolvimento e de análise aplicadas (R e RStudio). O que é pouco provável.
 
 
 # Resultados
@@ -714,7 +597,7 @@ ggplot(aes(experts, alternatives, fill = statistic)) +
 ```
 \begin{footnotesize}Gráfico 6: Quadro de magnitudes de consenso com base em IC à 95% de significância e envolvendo quatro dos fatores do experimento (total de alterntivas, total de participantes, quatificadores e distâncias).\end{footnotesize}
 
-Observe no gráfico que as distâncias de Manhatan, Euclidiana, Cosseno e Jaccard parece ter boas medianas no geral. Porém, Dice tem valores muito baixos para o quantificador "*asmany*" e "*most*". As distâncias de Euclides e de Manhattan tem valores praticamente iguais. Note ainda que não existem consensos piores que 0.5, o aleatório. Constatação que serve de evidência à validade do modelo.
+Observe no gráfico que as distâncias de Manhatan, Euclidiana, Cosseno e Jaccard parece ter boas medianas no geral. Porém, Dice tem valores muito baixos para o quantificador "*asmany*" e "*most*". As distâncias de Euclides e de Manhattan tem valores praticamente iguais. Note ainda que não existem consensos piores que 0.5, o aleatório. Constatação que ser de evidência à validade do modelo.
 
 Para finalizar, perceba que "leasthalf" apresenta os melhores índices de consenso. Lembrando que este quantificador apresenta uma importante ameaça a sua validade neste experimento (e por consequência no experimento original também), por demonstrar ser um modelo de distância muito otimista, atingindo o consenso algumas vezes sem nenhuma iteração.
 
@@ -725,8 +608,6 @@ Comparações pareadas, tal como no experimento original, são o ponto de partid
 Para o gráfico 7a, no eixo x está cada valor utilizado para o parâmetro "total de participantes", agrupado por quantificador. No eixo y estão os totais de alternativas utilizados, agrupados por nível de consenso. A escala e cores representa cada uma das 10 comparações possível, sendo o vermelho igual à 7 comparações e o verde igual à 9. Estas cores representam o total de comparações que apresentaram diferença à 95% de significância (o mínino foi 7 e o máximo foi 9).
 
 Para o gráfico 7b, o eixo x também mostra cada valor utilizado para o parâmetro "total de participantes", agora agrupados por comparação entre distâncias. No eixo y estão os totais de alternativas utilizados, agrupados por nível de consenso. A escala e cores representa cada um dos 3 níveis de consenso, sendo o vermelho igual à 0 níveis e o verde igual à 3 níveis. Estas cores representam em que níveis tais comparações apresentam diferença à 95% de confiança.
-
-Em particular, observando os gráficos abaixo, podemos comparar nossos resultados a alguns dos resultados do experimento original.
 
 ```{r echo=FALSE}
 
@@ -898,24 +779,6 @@ ggplot(aes(experts, alternatives, fill = statistic_count)) +
 ```
 \begin{footnotesize}Gráfico 7b: Quadro de comparações com base em ICà 95% de significância e envolvendo quatro dos fatores do experimento (total de alterntivas, total de participantes, quatificadores e comparações pareadas entre distâncias). A cor verde indica que 3 níveis e consenso apresentarm diferença. Já a cor vermelha, zero.\end{footnotesize}
 
-Tal como o autor original propôs, analisarei cada nível de consenso separadamente.
-
-### Nível de pares de alternativas
-
-Conforme resultado obtido no experimento original, perceba no gráfico 7a que o número de comparações que coinsidem nunca diminui quando aumentamos o total de participantes e fixamos as alternativas. O mesmo ocorre se fixarmos as alternativas e aumentarmos os participantes. Como exceção para estas regras podemos apontar a coluna do quantificador "*most*" com quatro alternativas. Este resultado é coerente com o obtido no experimento original.
-
-### Nível de alternativas
-
-Voltando ao gráfico 7a, tal como o autor reportou, a quantidade de comparações significativamente diferentes (à 95% de significância) aumenta a media que o total de participantes aumenta, salvo uma única exceção entre 4 e 6 participantes no quantificador "*most*" com quatro alternativas.
-
-### Nível de relacionamento geral
-
-Para este nível o autor original faz apenas uma comparação em magnitude de consenso. Podemos fazer o mesmo com base no gráfico 6, além de notarmos no gráfico 7a a mesma regra dos níveis anteriores: quanto maior o número de participantes, maior a divergência.
-
-No gráfico 6, observamos que há pouca ou nenhuma variação na magnitude do grau de consenso a medida que o número de participantes ou alternativas aumenta, conclusão que distoa dos resultados do autor original. Em concordância com os resultados originais, as distâncias de Manhattan e Euclidiana, equivalentes em quase todos os casos (segundo o gráfico 6 de magnitude), apresentam os maiores graus de consenso. Em seguida vem a distância Cosseno e Jaccard e por ultimo Dice. Vale frizar que para a análise da magnitude, como identificamos que o quantificador "*leasthalf*" é excessivamente otimista, devemos levar os outros em maior consideração.
-
-### Sumarizando
-
 Observando agora o gráfico 7b, tal como o autor original, não podemos afirmar nenhuma diferença entre as distâncias euclidiana e de Manhattan em nenhum dos três níveis. Tal resultado é interessante, visto que, de acordo com nossa análise de magnitude, a distância euclidiana e a distância de Manhattan, além da distância cosseno, apresentam os maiores graus de consenso no geral.
 
 A distância cosseno também apresenta semelhanças pontuais com a distância euclidiana (para o quantificador "*most*" e 4 ou 6 participantes), com Jaccard em boa parte do quantificador "*asmany*" e com Manhattan em um padrão muito semelhante ao da distância euclidiana.
@@ -933,8 +796,6 @@ O $R^2$ mede o o quão um variável é capaz de descrever o comportamento da out
 Tratando exclusivamente da relação entre consenso e distância, chegamos a um resultado um pouco diferente do que chegamos para Intervalos de confiança. Como antes, as distâncias de Manhattan e Euclidiana não apresentam diferença considerável à pelo menos 95% de significância. Já Jaccard, que na análise anterior parecia bem diferente das outras duas, agora interfere no consenso em apenas 0.034%, com relação a escolher as distâncias Euclidiana ou de Manhattan, à um $p\leq0.05$. Resultado que distoa das análises anteriores e até do experimento original, onde utilizou-se teste de hipóteses. Perceba ainda que todas estas comparações incluem a distância de Manhattan e a distância Euclidiana, as mais promissoras em magnitude de consenso (de acordo com a análise anterior).
 
 Entenda que na análise anterior, tal como fez o autor, não comparo magnitude de diferença, apenas as identifico com 95% de significância. Com base na natureza da análise feita, qualquer diferença significativa apareceria nos dados, ainda que de baixa magnitude. Por isto não percebemos semelhança entre Jaccard, Euclidean e Manhattan pela análise anterior (já que temos apenas um $R^2\simeq 0.00034$).
-
-Uma evidência da semelhança entre Jaccard e a dupla Euclidean e Manhattan pode ser retirado do gráfico 1, no início deste relatório. Perceba naquele gráfico que as distribuições das distâncias de Euclides e de Manhattan realmente são quase idénticas, porém a distância de Jaccard se aproxima muito das duas, exceto para o quantificador "*asmany*". Esta pode ser a causa para o modelo de regressão não ter identificado diferença considerável entre elas.
 
 ```{r echo=FALSE}
 
