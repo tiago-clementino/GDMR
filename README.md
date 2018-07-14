@@ -68,4 +68,4 @@ Além de algum compilador Tex. Aqui foi utilizado o MikTex.
 8. Abra o arquivo ".\ASCSODSMOCIGDM\report\peer.review.ref18.Rmd", ou sua versão resumida ".\ASCSODSMOCIGDM\report\peer.review.ref18-summarized.Rmd". Clique em "Knit" (canto superior esquerdo do editor). Dentre as opções apresentadas, selecione "knit to pdf".
 9. O resultado será exibido e estará disponível em ".\ASCSODSMOCIGDM\report\peer.review.ref18.pdf" ou ".\ASCSODSMOCIGDM\report\peer.review.ref18-summarized.pdf".
 
-*OBS: Caso prefira, os arquivos de saída (relatórios PDF) já possuem uma versão pronta para apreciação.
+*OBS: Caso prefira, os arquivos de saída (relatórios PDF) já possuem uma versão pronta para leitura e análise.
